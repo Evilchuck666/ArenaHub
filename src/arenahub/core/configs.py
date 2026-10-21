@@ -6,9 +6,9 @@ Each game folder with configs gets three files, as in QuakeBundle:
 - game.cfg:     bindings, HUD, graphics, sound and server settings.
 - player.cfg:   name, sensitivity and model; ArenaHub edits name and sensitivity.
 
-Folders without their own configs (Rocket Arena 3, Threewave) use baseq3's,
-because the engine looks for autoexec.cfg in the mod folder first and then in
-baseq3.
+Every game ArenaHub installs has its own set. A folder without them would
+still use baseq3's, because the engine looks for autoexec.cfg in the mod
+folder first and then in baseq3.
 """
 
 from __future__ import annotations

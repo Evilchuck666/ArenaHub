@@ -6,6 +6,7 @@ import pytest
 from arenahub.core import configs
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets" / "cfg"
+GAME_DIRS = ["arena", "baseq3", "cpma", "missionpack", "osp", "threewave"]
 
 
 def make_install(tmp_path, *game_dirs):
@@ -18,10 +19,10 @@ def make_install(tmp_path, *game_dirs):
 
 
 def test_bundled_game_dirs():
-    assert configs.bundled_game_dirs() == ["baseq3", "cpma", "missionpack", "osp"]
+    assert configs.bundled_game_dirs() == GAME_DIRS
 
 
-@pytest.mark.parametrize("game_dir", ["baseq3", "cpma", "missionpack", "osp"])
+@pytest.mark.parametrize("game_dir", GAME_DIRS)
 def test_autoexec_only_runs_game_then_player(game_dir):
     text = (ASSETS / game_dir / "autoexec.cfg").read_text()
     commands = [line.split("//")[0].split() for line in text.splitlines()]
@@ -29,7 +30,7 @@ def test_autoexec_only_runs_game_then_player(game_dir):
     assert commands == [["exec", "game.cfg"], ["exec", "player.cfg"]]
 
 
-@pytest.mark.parametrize("game_dir", ["baseq3", "cpma", "missionpack", "osp"])
+@pytest.mark.parametrize("game_dir", GAME_DIRS)
 def test_player_settings_live_only_in_player_cfg(game_dir):
     game = (ASSETS / game_dir / "game.cfg").read_text()
     player = (ASSETS / game_dir / "player.cfg").read_text()
@@ -39,7 +40,7 @@ def test_player_settings_live_only_in_player_cfg(game_dir):
     assert "{quake_3" not in game + player  # no template placeholders left
 
 
-@pytest.mark.parametrize("game_dir", ["baseq3", "cpma", "missionpack", "osp"])
+@pytest.mark.parametrize("game_dir", GAME_DIRS)
 def test_every_setting_is_explained(game_dir):
     """Each binding and variable carries a comment saying what it does."""
     for name in configs.CONFIG_FILES:
@@ -98,7 +99,7 @@ def test_validate(player, message):
 
 
 def test_install_copies_only_missing_files(tmp_path):
-    folder = make_install(tmp_path, "baseq3", "cpma", "arena")
+    folder = make_install(tmp_path, "baseq3", "cpma")
     (folder / "baseq3" / "game.cfg").write_text("// my own game.cfg\n")
     (folder / "baseq3" / "arenahub.cfg").write_text("// from an older ArenaHub\n")
 
@@ -114,7 +115,6 @@ def test_install_copies_only_missing_files(tmp_path):
     assert (folder / "baseq3" / "game.cfg").read_text() == "// my own game.cfg\n"
     assert not (folder / "baseq3" / "arenahub.cfg").exists()
     assert not (folder / "missionpack").exists()  # only installed games get configs
-    assert not list((folder / "arena").iterdir())  # mods without configs use baseq3's
 
 
 def test_save_and_read_player(tmp_path):
@@ -147,3 +147,30 @@ def test_format_sensitivity():
     assert configs.format_sensitivity(3.0) == "3"
     assert configs.format_sensitivity(2.75) == "2.75"
     assert configs.format_sensitivity(0.1234567) == "0.1235"
+
+
+@pytest.mark.parametrize(
+    "game_dir, expected",
+    [
+        ("cpma", {"cg_forceModel": "1", "cg_enemyModel": "tankjr/pm"}),
+        ("osp", {"cg_forceModel": "1", "cg_enemyModel": "tankjr/pm"}),
+        (
+            "arena",
+            {
+                "cg_forceModel": "1",
+                "cg_teamModel": "ranger",
+                "cg_enemyModel": "tankjr",
+                "cg_customColors": "1",
+            },
+        ),
+        (
+            "threewave",
+            {"cg_forceModel": "1", "cg_usepromodeskins": "1", "cg_enemymodel": "tankjr/pm"},
+        ),
+        ("baseq3", {"cg_forceModel": "0"}),
+    ],
+)
+def test_team_and_enemy_models(game_dir, expected):
+    text = (ASSETS / game_dir / "game.cfg").read_text()
+    for key, value in expected.items():
+        assert configs.read_value(text, key) == value, key

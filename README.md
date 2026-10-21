@@ -61,8 +61,7 @@ stay in that folder too.
 
 ### Game configs
 
-Quake III Arena, Team Arena, CPMA and OSP get three config files in their
-folders, as in QuakeBundle:
+Every game gets three config files in its folder, as in QuakeBundle:
 
 | File | What it holds |
 | --- | --- |
@@ -73,8 +72,13 @@ folders, as in QuakeBundle:
 When you change your name or sensitivity in the **Play** tab, ArenaHub writes
 them straight into every `player.cfg` and leaves the rest of each file as it is.
 It only adds config files that are missing, so your own edits survive updates.
-Rocket Arena 3 and Threewave have no configs of their own and use `baseq3`'s.
 The originals live in [`assets/cfg/`](assets/cfg/).
+
+In the mods, teammates and enemies get fixed, easy-to-spot models: teammates
+look like Ranger and enemies like a bright Tank Jr. CPMA, OSP and Threewave use
+CPMA's bright "pm" skins. Rocket Arena 3 has no such skins, so it paints its own
+with colors instead (white teammates, green enemies). Each mod's `game.cfg` has
+these settings in its last section.
 
 ### Shortcuts
 
