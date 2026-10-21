@@ -1,0 +1,14 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        { "label": "uv sync", "type": "shell", "command": "uv sync", "problemMatcher": [] },
+        { "label": "Ejecutar ArenaHub", "type": "shell", "command": "uv run arenahub", "problemMatcher": [] },
+        {
+            "label": "Build onefile (PyInstaller)",
+            "type": "shell",
+            "command": "uv run pyinstaller ArenaHub.spec --clean --noconfirm",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": []
+        }
+    ]
+}

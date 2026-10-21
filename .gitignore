@@ -1,0 +1,44 @@
+# Entorno de uv / virtualenvs
+.venv/
+venv/
+env/
+.python-local/
+
+# Bytecode y caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Build / PyInstaller
+build/
+dist/
+*.egg-info/
+*.manifest
+!ArenaHub.spec
+
+# Qt
+*.qmlc
+*.jsc
+*.pro.user
+
+# Editor / SO
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Temporales y logs
+*.log
+*.tmp
+tmp/
+.env
