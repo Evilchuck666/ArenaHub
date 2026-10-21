@@ -2,17 +2,24 @@ import shutil
 
 import pytest
 
-from arenahub.core import engine, installer, net, q3key, steam_keys, steamcmd
+from arenahub.core import engine, installer, net, q3key, steam
 from arenahub.core.catalog import QUAKE3_APP_ID, TEAM_ARENA_APP_ID
 from arenahub.core.context import TaskError
+from arenahub.steam_depots import PART_SUFFIX
 
 from .conftest import RecordingContext, make_zip
+
+# Each Steam app brings its own folder, like depots 2201 and 2351.
+DEPOT_FILES = {
+    QUAKE3_APP_ID: ("baseq3/pak0.pk3",),
+    TEAM_ARENA_APP_ID: ("missionpack/pak0.pk3",),
+}
 
 
 @pytest.fixture
 def offline(tmp_path, monkeypatch):
     """Replace every network and Steam step with local fakes."""
-    calls = {}
+    calls = {"not_owned": set(), "keys": {}}
     archives = tmp_path / "archives"
     archives.mkdir()
     make_zip(archives / "cpma-1.53-nomaps.zip", {"cpma/z-cpma-pak153.pk3": "cpma"})
@@ -27,33 +34,26 @@ def offline(tmp_path, monkeypatch):
         (install_dir / "quake3e.x64").write_text("engine")
         return [install_dir / "quake3e.x64"]
 
-    def fetch_keys(ctx, username, password, app_ids):
-        calls["keys"] = (username, password, app_ids)
-        return {
-            QUAKE3_APP_ID: steam_keys.KeyResult(QUAKE3_APP_ID, "OK", "ABCD-GHJL-PRST-W237"),
-            TEAM_ARENA_APP_ID: steam_keys.KeyResult(TEAM_ARENA_APP_ID, "AccessDenied", ""),
-        }
+    def run(ctx, username, password, key_apps, download=None):
+        calls["steam"] = (username, password, key_apps, download.apps, download.include)
+        result = steam.SteamResult(keys=dict(calls["keys"]))
+        for app_id in download.apps:
+            if app_id in calls["not_owned"]:
+                result.apps[app_id] = "NotOwned"
+                continue
+            for name in DEPOT_FILES[app_id]:
+                (download.dest / name).parent.mkdir(parents=True, exist_ok=True)
+                (download.dest / name).write_text("data")
+            result.apps[app_id] = "OK"
+        return result
 
-    # Each Steam app brings its own folder, like depots 2201 and 2351.
-    depot_files = {
-        QUAKE3_APP_ID: ("baseq3/pak0.pk3", "quake3.exe"),
-        TEAM_ARENA_APP_ID: ("missionpack/pak0.pk3",),
+    calls["keys"] = {
+        QUAKE3_APP_ID: steam.KeyResult(QUAKE3_APP_ID, "OK", "ABCD-GHJL-PRST-W237"),
+        TEAM_ARENA_APP_ID: steam.KeyResult(TEAM_ARENA_APP_ID, "OK", "BCDG-HJLP-RSTW-2373-a7"),
     }
-    calls["not_owned"] = set()
-
-    def download_app(ctx, exe, app_id, depot, username, password):
-        calls.setdefault("steamcmd", []).append((app_id, username, password))
-        if app_id in calls["not_owned"]:
-            raise steamcmd.NotOwned(app_id, "This Steam account does not own this game.")
-        for name in depot_files[app_id]:
-            (depot / name).parent.mkdir(parents=True, exist_ok=True)
-            (depot / name).write_text("data")
-
     monkeypatch.setattr(net, "fetch", fetch)
     monkeypatch.setattr(engine, "install", install_engine)
-    monkeypatch.setattr(steam_keys, "fetch", fetch_keys)
-    monkeypatch.setattr(steamcmd, "install", lambda ctx: tmp_path / "steamcmd.sh")
-    monkeypatch.setattr(steamcmd, "download_app", download_app)
+    monkeypatch.setattr(steam, "run", run)
     return calls
 
 
@@ -62,20 +62,53 @@ def test_full_install(tmp_path, offline):
     options = installer.InstallOptions(folder, "me", "secret", steam=True, mods=["cpma"])
     report = installer.install(RecordingContext(), options)
 
-    assert offline["keys"] == ("me", "secret", [QUAKE3_APP_ID, TEAM_ARENA_APP_ID])
-    assert offline["steamcmd"] == [
-        (QUAKE3_APP_ID, "me", "secret"),
-        (TEAM_ARENA_APP_ID, "me", "secret"),
-    ]
+    username, password, keys, apps, include = offline["steam"]
+    assert (username, password) == ("me", "secret")
+    assert keys == [QUAKE3_APP_ID, TEAM_ARENA_APP_ID]
+    assert apps == (QUAKE3_APP_ID, TEAM_ARENA_APP_ID)
+    assert include == ("baseq3", "missionpack")
+
     assert (folder / "baseq3" / "pak0.pk3").is_file()
     assert (folder / "missionpack" / "pak0.pk3").is_file()
-    assert not (folder / "quake3.exe").exists()
     assert (folder / "cpma" / "z-cpma-pak153.pk3").is_file()
     assert (folder / "baseq3" / "map_cpm1.pk3").is_file()
     assert q3key.read(folder, "baseq3") == "abcdghjlprstw237"
-    assert q3key.read(folder, "missionpack") is None
-    assert report.keys == {"baseq3": "abcdghjlprstw237"}
+    # Team Arena keys come with a checksum, which is dropped.
+    assert q3key.read(folder, "missionpack") == "bcdghjlprstw2373"
+    assert report.keys == {"baseq3": "abcdghjlprstw237", "missionpack": "bcdghjlprstw2373"}
     assert not (folder / installer.STAGING).exists()
+
+
+def test_team_arena_is_optional(tmp_path, offline):
+    offline["not_owned"].add(TEAM_ARENA_APP_ID)
+    folder = tmp_path / "q3"
+    ctx = RecordingContext()
+    installer.install(ctx, installer.InstallOptions(folder, "me", "secret"))
+    assert (folder / "baseq3" / "pak0.pk3").is_file()
+    assert not (folder / "missionpack").exists()
+    assert q3key.read(folder, "missionpack") is None
+    assert any("does not own Team Arena" in line for line in ctx.logs)
+
+
+def test_quake3_is_required(tmp_path, offline):
+    offline["not_owned"].add(QUAKE3_APP_ID)
+    with pytest.raises(TaskError, match="does not own Quake III Arena"):
+        installer.install(RecordingContext(), installer.InstallOptions(tmp_path / "q3", "me", "x"))
+
+
+def test_unfinished_files_are_removed(tmp_path, offline, monkeypatch):
+    folder = tmp_path / "q3"
+
+    def interrupted(ctx, username, password, key_apps, download=None):
+        part = download.dest / "baseq3" / f"pak0.pk3{PART_SUFFIX}"
+        part.parent.mkdir(parents=True)
+        part.write_text("half")
+        raise TaskError("network down")
+
+    monkeypatch.setattr(steam, "run", interrupted)
+    with pytest.raises(TaskError):
+        installer.install(RecordingContext(), installer.InstallOptions(folder, "me", "x"))
+    assert not list(folder.rglob(f"*{PART_SUFFIX}"))
 
 
 def test_update_without_steam_needs_the_game(tmp_path, offline):
@@ -89,24 +122,7 @@ def test_update_without_steam(tmp_path, offline):
     (folder / "baseq3").mkdir(parents=True)
     (folder / "baseq3" / "pak0.pk3").write_text("data")
     installer.install(RecordingContext(), installer.InstallOptions(folder, steam=False))
-    assert "keys" not in offline and "steamcmd" not in offline
-
-
-def test_team_arena_is_optional(tmp_path, offline):
-    offline["not_owned"].add(TEAM_ARENA_APP_ID)
-    folder = tmp_path / "q3"
-    ctx = RecordingContext()
-    installer.install(ctx, installer.InstallOptions(folder, "me", "secret"))
-    assert (folder / "baseq3" / "pak0.pk3").is_file()
-    assert not (folder / "missionpack").exists()
-    assert any("does not own Team Arena" in line for line in ctx.logs)
-
-
-def test_quake3_is_required(tmp_path, offline):
-    offline["not_owned"].add(QUAKE3_APP_ID)
-    with pytest.raises(TaskError, match="does not own Quake III Arena"):
-        installer.install(RecordingContext(), installer.InstallOptions(tmp_path / "q3", "me", "x"))
-    assert [call[0] for call in offline["steamcmd"]] == [QUAKE3_APP_ID]
+    assert "steam" not in offline
 
 
 def test_steam_requires_username(tmp_path, offline):
@@ -114,8 +130,8 @@ def test_steam_requires_username(tmp_path, offline):
         installer.install(RecordingContext(), installer.InstallOptions(tmp_path, steam=True))
 
 
-def test_missing_quake3_key_is_a_warning(tmp_path, offline, monkeypatch):
-    monkeypatch.setattr(steam_keys, "fetch", lambda *args: {})
+def test_missing_quake3_key_is_a_warning(tmp_path, offline):
+    offline["keys"] = {}
     options = installer.InstallOptions(tmp_path / "q3", "me", "secret")
     report = installer.install(RecordingContext(), options)
     assert any("did not return a CD key" in w for w in report.warnings)

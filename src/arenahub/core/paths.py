@@ -28,7 +28,7 @@ def machine() -> str:
 
 
 def data_dir() -> Path:
-    """Where ArenaHub keeps its own files (SteamCMD)."""
+    """Where ArenaHub keeps its own per-user files."""
     match system():
         case "windows":
             base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
@@ -37,10 +37,6 @@ def data_dir() -> Path:
         case _:
             base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
     return base / APP_NAME
-
-
-def steamcmd_dir() -> Path:
-    return data_dir() / "steamcmd"
 
 
 def default_install_dir() -> Path:
@@ -66,7 +62,7 @@ def child_env() -> dict[str, str]:
     """Environment for programs we start, without PyInstaller's library path changes.
 
     A frozen build points LD_LIBRARY_PATH at its own bundled libraries, which
-    must not leak into SteamCMD or the engine.
+    must not leak into the engine.
     """
     env = os.environ.copy()
     for var in ("LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):

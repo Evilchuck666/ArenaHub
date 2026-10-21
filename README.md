@@ -11,7 +11,7 @@ the mods you choose. Then you play from the same window.
 
 | Game | Source |
 | --- | --- |
-| **Quake III Arena** | Your Steam library (app 2200), through SteamCMD |
+| **Quake III Arena** | Your Steam library (app 2200) |
 | **Quake III: Team Arena** | Your Steam library (app 2350), when your account owns it |
 | **Challenge ProMode Arena** 1.53 + full map pack | [playmorepromode.com](https://playmorepromode.com/downloads) |
 | **OSP Tourney DM/CA/CTF** 1.03a | [osp.dget.cc](https://osp.dget.cc/), mirrored by mirrorservice.org |
@@ -28,11 +28,8 @@ Quake3e you can join Rocket Arena servers, but you cannot host local matches.
 
 - A **Steam account that owns Quake III Arena**. Team Arena is optional.
 - An Internet connection and about 2 GB of free space.
-- **GNU/Linux:** SDL2 for Quake3e. SteamCMD also needs 32-bit glibc
-  (Arch/Artix: `sdl2` and `lib32-glibc`; Debian/Ubuntu: `libsdl2-2.0-0` and
-  `lib32gcc-s1`). Qt needs `libxkbcommon` and `libxkbcommon-x11`.
-- **macOS on Apple Silicon:** Rosetta 2, because SteamCMD is an Intel binary
-  (`softwareupdate --install-rosetta --agree-to-license`).
+- **GNU/Linux:** SDL2 for Quake3e (Arch/Artix: `sdl2`; Debian/Ubuntu:
+  `libsdl2-2.0-0`). Qt needs `libxkbcommon` and `libxkbcommon-x11`.
 
 The ArenaHub executable bundles its own Python and Qt. You don't need to install
 either one.
@@ -41,15 +38,18 @@ either one.
 
 1. Choose an installation folder, enter your Steam username, pick the mods and
    press **Install**.
-2. ArenaHub asks for your Steam password. It logs in to Steam and requests the
-   CD keys for Quake III Arena and Team Arena, just like *Manage → CD Keys* in
-   the Steam client.
-3. SteamCMD downloads Quake III Arena, then Team Arena if your account owns it
-   (it is a separate Steam app). Steam may ask for a Steam Guard code a second
-   time, because SteamCMD keeps its own session.
-4. ArenaHub copies `baseq3` and `missionpack` into the folder, writes the keys to
-   `baseq3/q3key` and `missionpack/q3key`, installs Quake3e and extracts the mods.
-5. In the **Play** tab, pick a game and press **Play**. Your player name, mouse
+2. ArenaHub asks for your Steam password and, if your account uses Steam Guard,
+   for its code. That single login is all it needs.
+3. It requests the CD keys for Quake III Arena and Team Arena, just like
+   *Manage → CD Keys* in the Steam client.
+4. It downloads `baseq3` from Quake III Arena and `missionpack` from Team Arena,
+   if your account owns it (it is a separate Steam app), straight from Steam's
+   content servers into the folder. Every file is checked against Steam's
+   SHA-1, and files that already match are not downloaded again, so **Update**
+   only verifies the game. Existing `.cfg` files are never replaced.
+5. It writes the keys to `baseq3/q3key` and `missionpack/q3key`, installs
+   Quake3e and extracts the mods.
+6. In the **Play** tab, pick a game and press **Play**. Your player name, mouse
    sensitivity and renderer (OpenGL or Vulkan) are applied on every launch.
 
 If Steam returns no key, you can type it into the **CD keys** section yourself.
@@ -57,18 +57,14 @@ The keys only matter on servers that enforce authentication (`sv_strictauth 1`).
 
 Everything lives in the installation folder. The engine runs with
 `fs_basepath` and `fs_homepath` pointing there, so configs, demos and screenshots
-stay in that folder too. SteamCMD is kept for later updates in:
-
-- `~/.local/share/ArenaHub/steamcmd` on Linux
-- `%LOCALAPPDATA%\ArenaHub\steamcmd` on Windows
-- `~/Library/Application Support/ArenaHub/steamcmd` on macOS
+stay in that folder too.
 
 ### Your Steam account
 
-ArenaHub never stores or logs your password or Steam Guard codes. The password
-goes to Steam through the standard login flow, and to SteamCMD through its
-terminal prompt. It is never passed as a command-line argument. SteamCMD may
-remember its own login session.
+ArenaHub never stores or logs your password or Steam Guard codes. They only go
+to Steam, through its standard login flow, and are never passed as
+command-line arguments. ArenaHub does not keep a Steam session, so every
+installation or update asks you to log in again.
 
 ## Development
 
@@ -104,8 +100,9 @@ The build stops if something in `REQUIRED` cannot be imported.
 ```text
 src/arenahub/
   __main__.py      entry point (GUI, --smoke-test, --steam-helper)
-  steam_helper.py  Steam client process that fetches CD keys (steam-next + gevent)
-  core/            installation logic, no Qt: catalog, downloads, SteamCMD, keys, launcher
+  steam_helper.py  Steam client process: login, CD keys, downloads (steam-next + gevent)
+  steam_depots.py  depot download from Steam's content servers (runs in the helper)
+  core/            installation logic, no Qt: catalog, downloads, Steam, keys, launcher
   gui/             Qt window and background worker
 tests/             pytest suite; no network or Steam account needed
 assets/icons/      application icon (regenerate with scripts/make_icons.py)
@@ -153,7 +150,7 @@ SmartScreen will warn on first launch.
 ## Credits
 
 Built with Qt6 / PySide6, [steam-next](https://github.com/fabieu/steam-next),
-SteamCMD and Quake3e. The CD key request follows
+zstandard and Quake3e. The CD key request and the depot chunk formats follow
 [SteamKit2](https://github.com/SteamRE/SteamKit). Quake III Arena is a trademark of
 id Software. The mods belong to their respective authors. ArenaHub is not
 affiliated with id Software, Bethesda or Valve.

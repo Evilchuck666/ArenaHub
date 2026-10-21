@@ -6,7 +6,7 @@ import importlib
 import sys
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_dynamic_libs, collect_submodules, copy_metadata
+from PyInstaller.utils.hooks import collect_submodules, copy_metadata
 
 ROOT = Path(SPECPATH)
 ICONS = ROOT / "assets" / "icons"
@@ -14,9 +14,16 @@ ICONS = ROOT / "assets" / "icons"
 # Everything the app imports at runtime, including what only the Steam helper
 # process or a single platform uses. The build stops if any of it is missing
 # from the environment, instead of producing a binary that fails later.
-REQUIRED = ["PySide6.QtWidgets", "requests", "certifi", "gevent", "steam.client", "websocket"]
-if sys.platform == "win32":
-    REQUIRED.append("winpty")
+REQUIRED = [
+    "PySide6.QtWidgets",
+    "requests",
+    "certifi",
+    "gevent",
+    "steam.client",
+    "steam.client.cdn",
+    "websocket",
+    "zstandard",
+]
 
 missing = []
 for name in REQUIRED:
@@ -28,17 +35,16 @@ if missing:
     raise SystemExit("Missing build dependencies (run the setup script):\n  " + "\n  ".join(missing))
 
 hiddenimports = [
+    # Only imported inside the Steam helper process.
     "arenahub.steam_helper",
+    "arenahub.steam_depots",
+    *collect_submodules("zstandard"),
     # steam-next loads its protobuf modules by name.
     *collect_submodules("steam"),
 ]
 datas = [(str(ICONS / "arenahub.png"), "assets/icons")]
 datas += copy_metadata("steam-next")
 binaries = []
-
-if sys.platform == "win32":
-    hiddenimports += collect_submodules("winpty")
-    binaries += collect_dynamic_libs("winpty")
 
 if sys.platform == "win32":
     ICON = str(ICONS / "arenahub.ico")

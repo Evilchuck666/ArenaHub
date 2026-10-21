@@ -1,6 +1,6 @@
 import pytest
 
-from arenahub.core.archive import extract, merge_tree
+from arenahub.core.archive import extract
 from arenahub.core.catalog import Rule
 from arenahub.core.context import TaskError
 
@@ -42,19 +42,3 @@ def test_extract_rejects_non_zip(tmp_path, ctx):
     bad.write_text("not a zip")
     with pytest.raises(TaskError):
         extract(ctx, bad, tmp_path / "dest")
-
-
-def test_merge_tree_replaces_files(tmp_path):
-    src, dest = tmp_path / "src", tmp_path / "dest"
-    (src / "sub").mkdir(parents=True)
-    (src / "pak0.pk3").write_text("new")
-    (src / "sub" / "x.cfg").write_text("cfg")
-    dest.mkdir()
-    (dest / "pak0.pk3").write_text("old")
-    (dest / "map_cpm1.pk3").write_text("keep")
-
-    merge_tree(src, dest)
-
-    assert (dest / "pak0.pk3").read_text() == "new"
-    assert (dest / "sub" / "x.cfg").read_text() == "cfg"
-    assert (dest / "map_cpm1.pk3").read_text() == "keep"

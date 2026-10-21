@@ -6,8 +6,9 @@ import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import engine, launcher, net, q3key, steam_keys, steamcmd
-from .archive import extract, merge_tree
+from ..steam_depots import PART_SUFFIX
+from . import engine, launcher, net, q3key, steam
+from .archive import extract
 from .catalog import QUAKE3, QUAKE3_APP_ID, QUAKE3_DIRS, TEAM_ARENA, TEAM_ARENA_APP_ID, game_by_id
 from .context import Context, TaskError
 
@@ -40,14 +41,13 @@ def install(ctx: Context, options: InstallOptions) -> InstallReport:
     report = InstallReport()
 
     _prepare(install_dir, options)
-    # Downloads stay in staging until everything succeeded, so a retry reuses them.
+    # Mod downloads stay in staging until everything succeeded, so a retry reuses them.
     staging = install_dir / STAGING
     downloads = staging / "downloads"
 
     if options.steam:
-        keys = _fetch_keys(ctx, options)
-        _download_quake3(ctx, options, staging)
-        _write_keys(ctx, install_dir, keys, report)
+        result = _steam(ctx, options, install_dir)
+        _write_keys(ctx, install_dir, result.keys, report)
     elif not (install_dir / QUAKE3.marker).is_file():
         raise TaskError("Quake III Arena is not installed in this folder yet.")
 
@@ -94,51 +94,40 @@ def _prepare(install_dir: Path, options: InstallOptions) -> None:
         )
 
 
-def _fetch_keys(ctx: Context, options: InstallOptions) -> dict[int, steam_keys.KeyResult]:
-    ctx.stage("Signing in to Steam")
-    ctx.progress(None, "Requesting your CD keys from Steam")
-    return steam_keys.fetch(
-        ctx, options.username, options.password, [QUAKE3_APP_ID, TEAM_ARENA_APP_ID]
+def _steam(ctx: Context, options: InstallOptions, install_dir: Path) -> steam.SteamResult:
+    """One Steam login: the CD keys, then Quake III Arena and Team Arena from the depots.
+
+    Only baseq3 and missionpack are downloaded, straight into the installation;
+    files that already match Steam's are kept, so an update just verifies them.
+    """
+    download = steam.Download(
+        dest=install_dir,
+        apps=(QUAKE3_APP_ID, TEAM_ARENA_APP_ID),
+        include=QUAKE3_DIRS,
+        titles={QUAKE3_APP_ID: QUAKE3.title, TEAM_ARENA_APP_ID: TEAM_ARENA.title},
     )
-
-
-def _download_quake3(ctx: Context, options: InstallOptions, staging: Path) -> None:
-    ctx.stage("Installing SteamCMD")
-    exe = steamcmd.install(ctx)
-
-    ctx.stage("Downloading Quake III Arena")
-    depot = staging / "steam"
-    depot.mkdir(parents=True, exist_ok=True)
+    keys = [QUAKE3_APP_ID, TEAM_ARENA_APP_ID]
     try:
-        steamcmd.download_app(ctx, exe, QUAKE3_APP_ID, depot, options.username, options.password)
-    except steamcmd.NotOwned:
-        raise TaskError("This Steam account does not own Quake III Arena.") from None
+        result = steam.run(ctx, options.username, options.password, keys, download)
+    finally:
+        # A cancelled or failed download leaves unfinished files behind.
+        for name in QUAKE3_DIRS:
+            for part in (install_dir / name).glob(f"**/*{PART_SUFFIX}"):
+                part.unlink(missing_ok=True)
 
-    # Team Arena is a separate app; SteamCMD normally reuses the session it just saved.
-    ctx.stage("Downloading Quake III: Team Arena")
-    try:
-        steamcmd.download_app(
-            ctx, exe, TEAM_ARENA_APP_ID, depot, options.username, options.password
-        )
-    except steamcmd.NotOwned:
+    if not result.owns(QUAKE3_APP_ID):
+        raise TaskError("This Steam account does not own Quake III Arena.")
+    if not result.owns(TEAM_ARENA_APP_ID):
         ctx.log("This Steam account does not own Team Arena; skipping it (it is optional).")
-
-    ctx.stage("Copying game data")
-    install_dir = staging.parent
-    found = {child.name.lower(): child for child in depot.iterdir() if child.is_dir()}
-    for name in QUAKE3_DIRS:
-        if name in found:
-            merge_tree(found[name], install_dir / name)
-            ctx.log(f"Copied {name}")
-
     if not (install_dir / QUAKE3.marker).is_file():
         raise TaskError("The Steam download did not contain Quake III Arena's baseq3/pak0.pk3.")
+    return result
 
 
 def _write_keys(
     ctx: Context,
     install_dir: Path,
-    keys: dict[int, steam_keys.KeyResult],
+    keys: dict[int, steam.KeyResult],
     report: InstallReport,
 ) -> None:
     ctx.stage("Writing CD keys")

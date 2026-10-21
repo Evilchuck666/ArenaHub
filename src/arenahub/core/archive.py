@@ -60,15 +60,3 @@ def extract(ctx: Context, archive: Path, dest: Path, rule: Rule | None = None) -
 def make_executable(path: Path) -> None:
     mode = path.stat().st_mode
     path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
-def merge_tree(src: Path, dest: Path) -> None:
-    """Move every file of src into dest, replacing files that already exist."""
-    for path in sorted(src.rglob("*")):
-        if path.is_dir():
-            continue
-        target = dest / path.relative_to(src)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if target.exists():
-            target.unlink()
-        shutil.move(path, target)

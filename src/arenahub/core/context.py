@@ -16,7 +16,6 @@ class TaskError(Exception):
 
 
 class PromptKind(Enum):
-    PASSWORD = "password"
     EMAIL_CODE = "email_code"
     TWO_FACTOR_CODE = "two_factor_code"
 

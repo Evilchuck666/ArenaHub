@@ -32,15 +32,15 @@ from PySide6.QtWidgets import (
 from .. import __version__
 from ..core import engine, launcher, paths, q3key
 from ..core.catalog import MODS, QUAKE3, TEAM_ARENA
-from ..core.context import Prompt, PromptKind
+from ..core.context import Prompt
 from ..core.engine import Renderer
 from ..core.installer import InstallOptions, InstallReport
 from .worker import InstallWorker
 
 STEAM_NOTE = (
-    "Quake III Arena is downloaded from Steam with SteamCMD, so your account must own it. "
-    "Team Arena is downloaded too when your account owns it. Your password and Steam Guard codes "
-    "are only sent to Steam and are never stored by ArenaHub."
+    "Quake III Arena is downloaded from Steam with a single login, so your account must own "
+    "it. Team Arena is downloaded too when your account owns it. Your password and Steam Guard "
+    "code are only sent to Steam and are never stored by ArenaHub."
 )
 
 
@@ -335,20 +335,11 @@ class MainWindow(QMainWindow):
             self.progress.setTextVisible(True)
 
     def _on_prompt(self, prompt: Prompt) -> None:
-        title = {
-            PromptKind.PASSWORD: "Steam password",
-            PromptKind.EMAIL_CODE: "Steam Guard",
-            PromptKind.TWO_FACTOR_CODE: "Steam Guard",
-        }[prompt.kind]
         message = prompt.message
         if prompt.retry:
-            message = "The previous answer was not accepted.\n" + message
-        if prompt.kind is PromptKind.PASSWORD:
-            answer = self._ask_secret(title, message)
-        else:
-            answer, ok = QInputDialog.getText(self, title, message)
-            answer = answer.strip() if ok else None
-        self.worker.context.answer(answer or None)
+            message = "The previous code was not accepted.\n" + message
+        answer, ok = QInputDialog.getText(self, "Steam Guard", message)
+        self.worker.context.answer(answer.strip() if ok and answer.strip() else None)
 
     def _ask_secret(self, title: str, message: str) -> str | None:
         text, ok = QInputDialog.getText(self, title, message, QLineEdit.EchoMode.Password)
