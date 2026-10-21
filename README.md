@@ -5,7 +5,7 @@
 ArenaHub is a desktop installer and launcher for Quake III Arena on GNU/Linux,
 Windows and macOS. It downloads your own Steam copy of the game, writes your CD
 keys, installs the [Quake3e](https://github.com/ec-/Quake3e) engine and adds
-the mods you choose. Then you play from the same window.
+four classic mods. Then you play from the same window.
 
 ## What it installs
 
@@ -36,8 +36,8 @@ either one.
 
 ## How it works
 
-1. Choose an installation folder, enter your Steam username, pick the mods and
-   press **Install**.
+1. Choose an installation folder, enter your Steam username and press
+   **Install**. All the mods in the table above are always installed.
 2. ArenaHub asks for your Steam password and, if your account uses Steam Guard,
    for its code. That single login is all it needs.
 3. It requests the CD keys for Quake III Arena and Team Arena, just like

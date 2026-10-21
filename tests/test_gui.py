@@ -114,3 +114,33 @@ def test_sensitivity_accepts_comma_or_dot(window, typed, text, value):
     QTest.keyClicks(window.sensitivity.lineEdit(), typed)
     assert window.sensitivity.lineEdit().text() == text
     assert window.sensitivity.value() == value
+
+
+def test_every_mod_is_listed_and_installed(window, monkeypatch):
+    from PySide6.QtWidgets import QCheckBox, QLabel
+
+    from arenahub.core.catalog import MODS
+
+    texts = [label.text() for label in window.findChildren(QLabel)]
+    for mod in MODS:
+        assert any(mod.title in text for text in texts), mod.title
+    assert not any(
+        any(mod.title in box.text() for mod in MODS) for box in window.findChildren(QCheckBox)
+    )
+
+    started = {}
+    monkeypatch.setattr(window, "_ask_secret", lambda *args: None)  # stop before installing
+    window.use_steam.setChecked(False)
+
+    from arenahub.gui import main_window
+
+    def fake_worker(options):
+        started["mods"] = options.mods
+        raise RuntimeError("stop")
+
+    monkeypatch.setattr(main_window, "InstallWorker", fake_worker)
+    try:
+        window.start_install()
+    except RuntimeError:
+        pass
+    assert started["mods"] == [mod.id for mod in MODS]

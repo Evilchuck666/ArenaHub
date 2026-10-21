@@ -116,15 +116,18 @@ class MainWindow(QMainWindow):
         self.use_steam.toggled.connect(self.username.setEnabled)
         layout.addWidget(steam)
 
-        mods = QGroupBox("Mods")
+        mods = QGroupBox("Mods installed with the game")
         mods_layout = QVBoxLayout(mods)
-        self.mod_boxes: dict[str, QCheckBox] = {}
         for mod in MODS:
-            box = QCheckBox(f"{mod.title} — {mod.description}")
+            label = QLabel(f"• <b>{mod.title}</b> — {mod.description}")
+            label.setWordWrap(True)
+            mods_layout.addWidget(label)
             if mod.notes:
-                box.setToolTip(mod.notes)
-            self.mod_boxes[mod.id] = box
-            mods_layout.addWidget(box)
+                notes = QLabel(mod.notes)
+                notes.setWordWrap(True)
+                notes.setIndent(14)
+                notes.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+                mods_layout.addWidget(notes)
         layout.addWidget(mods)
 
         self.shortcuts = QCheckBox("Create shortcuts for the installed games")
@@ -217,9 +220,6 @@ class MainWindow(QMainWindow):
         index = self.renderer.findData(s.value("renderer", Renderer.OPENGL.value))
         self.renderer.setCurrentIndex(max(index, 0))
         self.shortcuts.setChecked(s.value("shortcuts", "false") == "true")
-        selected = s.value("mods", [m.id for m in MODS]) or []
-        for mod_id, box in self.mod_boxes.items():
-            box.setChecked(mod_id in selected)
 
     def _save_settings(self) -> None:
         s = self.settings
@@ -229,7 +229,7 @@ class MainWindow(QMainWindow):
         s.setValue("sensitivity", self.sensitivity.value())
         s.setValue("renderer", self.renderer.currentData())
         s.setValue("shortcuts", "true" if self.shortcuts.isChecked() else "false")
-        s.setValue("mods", [mod_id for mod_id, box in self.mod_boxes.items() if box.isChecked()])
+        s.remove("mods")  # the mod selection of earlier versions
 
     # State ------------------------------------------------------------------------
 
@@ -287,7 +287,7 @@ class MainWindow(QMainWindow):
             install_dir=self.install_dir(),
             username=self.username.text().strip(),
             steam=self.use_steam.isChecked(),
-            mods=[mod_id for mod_id, box in self.mod_boxes.items() if box.isChecked()],
+            mods=[mod.id for mod in MODS],  # every mod is always installed
             shortcuts=self.shortcuts.isChecked(),
             renderer=Renderer(self.renderer.currentData()),
             player=self._valid_player(),
