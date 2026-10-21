@@ -5,6 +5,10 @@
 - **Never commit automatically.** Leave changes uncommitted unless the user
   explicitly asks for a commit in that request. The same goes for pushing,
   tagging and creating releases.
+- **Never stage automatically either.** Don't run `git add`, `git mv`,
+  `git rm` or anything else that changes the index unless the user asks. To
+  move, rename or delete files, use plain `mv` and `rm` and leave the
+  changes unstaged.
 
 ## Language
 
