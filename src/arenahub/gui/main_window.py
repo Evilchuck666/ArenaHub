@@ -39,7 +39,7 @@ from .worker import InstallWorker
 
 STEAM_NOTE = (
     "Quake III Arena is downloaded from Steam with SteamCMD, so your account must own it. "
-    "Team Arena is included when your copy has it. Your password and Steam Guard codes "
+    "Team Arena is downloaded too when your account owns it. Your password and Steam Guard codes "
     "are only sent to Steam and are never stored by ArenaHub."
 )
 

@@ -109,7 +109,19 @@ def _download_quake3(ctx: Context, options: InstallOptions, staging: Path) -> No
     ctx.stage("Downloading Quake III Arena")
     depot = staging / "steam"
     depot.mkdir(parents=True, exist_ok=True)
-    steamcmd.download_app(ctx, exe, QUAKE3_APP_ID, depot, options.username, options.password)
+    try:
+        steamcmd.download_app(ctx, exe, QUAKE3_APP_ID, depot, options.username, options.password)
+    except steamcmd.NotOwned:
+        raise TaskError("This Steam account does not own Quake III Arena.") from None
+
+    # Team Arena is a separate app; SteamCMD normally reuses the session it just saved.
+    ctx.stage("Downloading Quake III: Team Arena")
+    try:
+        steamcmd.download_app(
+            ctx, exe, TEAM_ARENA_APP_ID, depot, options.username, options.password
+        )
+    except steamcmd.NotOwned:
+        ctx.log("This Steam account does not own Team Arena; skipping it (it is optional).")
 
     ctx.stage("Copying game data")
     install_dir = staging.parent

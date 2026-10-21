@@ -36,7 +36,7 @@ PROMPTS = (
 )
 
 HINTS = {
-    "no subscription": "This Steam account does not own Quake III Arena.",
+    "no subscription": "This Steam account does not own this game.",
     "invalid password": "Steam rejected the username or password.",
     "rate limit exceeded": "Steam is limiting login attempts. Wait a while and try again.",
     "two-factor code mismatch": "The Steam Guard code was not accepted.",
@@ -44,6 +44,14 @@ HINTS = {
 }
 
 TAIL_LINES = 15
+
+
+class NotOwned(TaskError):
+    """SteamCMD refused the download because the account does not own the app."""
+
+    def __init__(self, app_id: int, message: str) -> None:
+        super().__init__(message)
+        self.app_id = app_id
 
 
 def executable() -> Path:
@@ -210,6 +218,8 @@ def download_app(
 
     code = console.wait()
     if code != 0 or not succeeded:
+        if any("no subscription" in line.lower() for line in tail):
+            raise NotOwned(app_id, explain(list(tail)))
         raise TaskError(explain(list(tail)))
 
 

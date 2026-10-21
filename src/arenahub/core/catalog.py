@@ -5,10 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 QUAKE3_APP_ID = 2200
-"""Steam app for Quake III Arena. Its depot also carries Team Arena (missionpack)."""
+"""Steam app for Quake III Arena (depot 2201: baseq3)."""
 
 TEAM_ARENA_APP_ID = 2350
-"""Legacy Steam app for Team Arena, only used to request its CD key."""
+"""Steam app for Team Arena (depot 2351: missionpack), installed in the same folder.
+
+Buying Quake III Arena today grants both apps, but each one is downloaded on its own.
+"""
 
 QUAKE3_DIRS = ("baseq3", "missionpack")
 """Folders copied from the Steam depot into the installation."""

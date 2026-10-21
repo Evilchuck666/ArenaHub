@@ -12,7 +12,7 @@ the mods you choose. Then you play from the same window.
 | Game | Source |
 | --- | --- |
 | **Quake III Arena** | Your Steam library (app 2200), through SteamCMD |
-| **Quake III: Team Arena** | Included in the same Steam download when your copy has it |
+| **Quake III: Team Arena** | Your Steam library (app 2350), when your account owns it |
 | **Challenge ProMode Arena** 1.53 + full map pack | [playmorepromode.com](https://playmorepromode.com/downloads) |
 | **OSP Tourney DM/CA/CTF** 1.03a | [osp.dget.cc](https://osp.dget.cc/), mirrored by mirrorservice.org |
 | **Rocket Arena 3** 1.80 | mirrorservice.org (QuakeUnity archive) |
@@ -44,7 +44,8 @@ either one.
 2. ArenaHub asks for your Steam password. It logs in to Steam and requests the
    CD keys for Quake III Arena and Team Arena, just like *Manage → CD Keys* in
    the Steam client.
-3. SteamCMD downloads the game. Steam may ask for a Steam Guard code a second
+3. SteamCMD downloads Quake III Arena, then Team Arena if your account owns it
+   (it is a separate Steam app). Steam may ask for a Steam Guard code a second
    time, because SteamCMD keeps its own session.
 4. ArenaHub copies `baseq3` and `missionpack` into the folder, writes the keys to
    `baseq3/q3key` and `missionpack/q3key`, installs Quake3e and extracts the mods.

@@ -77,6 +77,22 @@ def test_download_app_answers_prompts(tmp_path, fake_steamcmd):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX pseudo-terminal test")
+def test_download_app_not_owned(tmp_path):
+    script = tmp_path / "steamcmd.sh"
+    script.write_text(
+        "#!/bin/sh\n"
+        "echo \"Logging in user 'me' to Steam Public...OK\"\n"
+        "echo \"ERROR! Failed to install app '2350' (No subscription)\"\n"
+        "exit 8\n"
+    )
+    script.chmod(0o755)
+    with pytest.raises(steamcmd.NotOwned) as caught:
+        steamcmd.download_app(RecordingContext(), script, 2350, tmp_path / "depot", "me", None)
+    assert caught.value.app_id == 2350
+    assert "does not own" in str(caught.value)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX pseudo-terminal test")
 def test_download_app_reports_failure(tmp_path, fake_steamcmd):
     ctx = RecordingContext(answers=["WRONG"])
     with pytest.raises(TaskError, match="not accepted"):
