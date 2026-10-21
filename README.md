@@ -59,6 +59,21 @@ Everything lives in the installation folder. The engine runs with
 `fs_basepath` and `fs_homepath` pointing there, so configs, demos and screenshots
 stay in that folder too.
 
+### Shortcuts
+
+With **Create shortcuts** checked, ArenaHub adds one shortcut per installed
+game. Each one starts Quake3e directly, with the renderer chosen at install
+time, so ArenaHub does not need to be running:
+
+| System | Shortcut |
+| --- | --- |
+| GNU/Linux | `~/.local/share/applications/arenahub-<game>.desktop`, in the application menu. It is made from the template in [`assets/links/`](assets/links/), downloaded from this repository as QuakeBundle does. The templates also explain how to install a shortcut by hand. |
+| macOS | `~/Applications/<Game>.app`, a small application built on Automator's application stub, with the ArenaHub icon. It opens without Terminal. |
+| Windows | `<Game>.lnk` on your Desktop, including a Desktop redirected to OneDrive. |
+
+Installing again replaces the shortcuts. If one cannot be created, the
+installation still finishes and reports a warning.
+
 ### Your Steam account
 
 ArenaHub never stores or logs your password or Steam Guard codes. They only go
@@ -106,6 +121,7 @@ src/arenahub/
   gui/             Qt window and background worker
 tests/             pytest suite; no network or Steam account needed
 assets/icons/      application icon (regenerate with scripts/make_icons.py)
+assets/links/      .desktop templates for the GNU/Linux shortcuts
 ```
 
 The Steam helper runs as a separate process, which is the same executable

@@ -61,10 +61,6 @@ def test_asset_names():
     assert engine.asset_name("windows", "x86_64") == "quake3e-windows-mingw-x86_64.zip"
 
 
-def test_desktop_quote():
-    assert launcher._desktop_quote('a "b" $c 100%') == '"a \\"b\\" \\$c 100%%"'
-
-
 def test_child_env_restores_library_path(monkeypatch):
     monkeypatch.setenv("LD_LIBRARY_PATH", "/tmp/_MEI1234")
     monkeypatch.setenv("LD_LIBRARY_PATH_ORIG", "/usr/lib/custom")

@@ -1,10 +1,7 @@
-"""Starting the games and creating shortcuts to them."""
+"""Starting the games."""
 
 from __future__ import annotations
 
-import os
-import shlex
-import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -76,84 +73,3 @@ def launch(install_dir: Path, game: Game, settings: PlayerSettings) -> subproces
         options["start_new_session"] = True
         options["stdout"] = options["stderr"] = subprocess.DEVNULL
     return subprocess.Popen(argv, **options)
-
-
-# Shortcuts -----------------------------------------------------------------
-
-
-def create_shortcut(install_dir: Path, game: Game, renderer: Renderer) -> Path:
-    argv = command(install_dir, game, renderer)
-    match paths.system():
-        case "windows":
-            return _windows_shortcut(install_dir, game, argv)
-        case "macos":
-            return _macos_shortcut(install_dir, game, argv)
-        case _:
-            return _linux_shortcut(install_dir, game, argv)
-
-
-def _desktop_quote(arg: str) -> str:
-    """Quote an argument for the Exec key of a .desktop file."""
-    escaped = arg.replace("\\", "\\\\").replace('"', '\\"').replace("`", "\\`").replace("$", "\\$")
-    return f'"{escaped}"'.replace("%", "%%")
-
-
-def _linux_shortcut(install_dir: Path, game: Game, argv: list[str]) -> Path:
-    icon = install_dir / "arenahub.png"
-    shutil.copyfile(paths.resource("icons", "arenahub.png"), icon)
-    folder = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
-    path = folder / "applications" / f"arenahub-{game.id}.desktop"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "[Desktop Entry]\n"
-        "Type=Application\n"
-        f"Name={game.title}\n"
-        f"Comment={game.description}\n"
-        f"Exec={' '.join(_desktop_quote(a) for a in argv)}\n"
-        f"Path={install_dir}\n"
-        f"Icon={icon}\n"
-        "Terminal=false\n"
-        "Categories=Game;ActionGame;\n"
-    )
-    path.chmod(0o755)
-    return path
-
-
-def _macos_shortcut(install_dir: Path, game: Game, argv: list[str]) -> Path:
-    path = Path.home() / "Applications" / f"{game.title}.command"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        f"#!/bin/sh\ncd {shlex.quote(str(install_dir))} || exit 1\nexec {shlex.join(argv)}\n"
-    )
-    path.chmod(0o755)
-    return path
-
-
-def _windows_shortcut(install_dir: Path, game: Game, argv: list[str]) -> Path:
-    def ps(value: str) -> str:
-        return "'" + value.replace("'", "''") + "'"
-
-    script = (
-        "$lnk = Join-Path ([Environment]::GetFolderPath('Desktop')) {name};"
-        "$s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk);"
-        "$s.TargetPath = {target};"
-        "$s.Arguments = {args};"
-        "$s.WorkingDirectory = {cwd};"
-        "$s.Description = {desc};"
-        "$s.Save();"
-        "Write-Output $lnk"
-    ).format(
-        name=ps(f"{game.title}.lnk"),
-        target=ps(argv[0]),
-        args=ps(subprocess.list2cmdline(argv[1:])),
-        cwd=ps(str(install_dir)),
-        desc=ps(game.description),
-    )
-    result = subprocess.run(
-        ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-        check=True,
-        capture_output=True,
-        text=True,
-        creationflags=subprocess.CREATE_NO_WINDOW,
-    )
-    return Path(result.stdout.strip())

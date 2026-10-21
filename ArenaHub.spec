@@ -42,7 +42,8 @@ hiddenimports = [
     # steam-next loads its protobuf modules by name.
     *collect_submodules("steam"),
 ]
-datas = [(str(ICONS / "arenahub.png"), "assets/icons")]
+# The window uses the PNG; shortcuts use the SVG (Linux), PNG (macOS) or ICO (Windows).
+datas = [(str(ICONS / name), "assets/icons") for name in ("arenahub.png", "arenahub.svg", "arenahub.ico")]
 datas += copy_metadata("steam-next")
 binaries = []
 

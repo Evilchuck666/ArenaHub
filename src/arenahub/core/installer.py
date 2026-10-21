@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..steam_depots import PART_SUFFIX
-from . import engine, launcher, net, q3key, steam
+from . import engine, launcher, net, q3key, shortcuts, steam
 from .archive import extract
 from .catalog import QUAKE3, QUAKE3_APP_ID, QUAKE3_DIRS, TEAM_ARENA, TEAM_ARENA_APP_ID, game_by_id
 from .context import Context, TaskError
@@ -63,7 +63,7 @@ def install(ctx: Context, options: InstallOptions) -> InstallReport:
         ctx.stage("Creating shortcuts")
         for game in launcher.installed_games(install_dir):
             try:
-                shortcut = launcher.create_shortcut(install_dir, game, options.renderer)
+                shortcut = shortcuts.create(ctx, install_dir, game, options.renderer)
                 report.shortcuts.append(shortcut)
             except Exception as exc:  # noqa: BLE001 - a shortcut must not fail the install
                 report.warnings.append(f"Could not create a shortcut for {game.title}: {exc}")

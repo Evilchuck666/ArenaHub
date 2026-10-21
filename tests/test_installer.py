@@ -135,3 +135,21 @@ def test_missing_quake3_key_is_a_warning(tmp_path, offline):
     options = installer.InstallOptions(tmp_path / "q3", "me", "secret")
     report = installer.install(RecordingContext(), options)
     assert any("did not return a CD key" in w for w in report.warnings)
+
+
+def test_shortcut_failures_are_warnings(tmp_path, offline, monkeypatch):
+    from arenahub.core import shortcuts
+
+    created = []
+
+    def create(ctx, install_dir, game, renderer):
+        if game.id == "missionpack":
+            raise OSError("template not found")
+        created.append(game.id)
+        return install_dir / f"{game.id}.desktop"
+
+    monkeypatch.setattr(shortcuts, "create", create)
+    options = installer.InstallOptions(tmp_path / "q3", "me", "secret", shortcuts=True)
+    report = installer.install(RecordingContext(), options)
+    assert created == ["baseq3"]
+    assert any("Quake III: Team Arena: template not found" in w for w in report.warnings)

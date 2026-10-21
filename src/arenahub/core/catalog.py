@@ -72,7 +72,7 @@ TEAM_ARENA = Game(
     id="missionpack",
     title="Quake III: Team Arena",
     game_dir="missionpack",
-    description="The official expansion, when your Steam copy includes it.",
+    description="The official expansion, when your Steam account owns it.",
     marker="missionpack/pak0.pk3",
 )
 

@@ -1,0 +1,17 @@
+# Template: ArenaHub fills in the paths and the engine command.
+# For manual installation, replace @ENGINE@ with the absolute path of the Quake3e
+# client (quake3e.x64 or quake3e-vulkan.x64) and @INSTALL_DIR@ with the
+# installation folder. Use assets/icons/arenahub.svg as the icon, copied to
+# @INSTALL_DIR@. Do not use ~ or $HOME in these paths.
+# Copy the customized file to ~/.local/share/applications/ for the application menu.
+
+[Desktop Entry]
+Type=Application
+Name=Rocket Arena 3
+Comment=Rocket Arena 3 1.80 and its arena maps.
+Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game arena +exec arenahub.cfg
+Path=@INSTALL_DIR@
+Icon=@INSTALL_DIR@/arenahub.svg
+TryExec=@ENGINE@
+Terminal=false
+Categories=Game;ActionGame;
