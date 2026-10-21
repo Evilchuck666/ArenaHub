@@ -52,7 +52,8 @@ either one.
 6. In the **Play** tab, pick a game and press **Play**, with the OpenGL or
    Vulkan renderer.
 
-If Steam returns no key, you can type it into the **CD keys** section yourself.
+If Steam returns no key, the **Play** tab shows a **CD keys** section where you
+can type it yourself. It only appears while an installed game lacks its key.
 The keys only matter on servers that enforce authentication (`sv_strictauth 1`).
 
 Everything lives in the installation folder. The engine runs with

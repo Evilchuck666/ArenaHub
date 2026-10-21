@@ -188,8 +188,16 @@ class MainWindow(QMainWindow):
         form.addRow(note)
         right.addWidget(player)
 
-        keys = QGroupBox("CD keys")
-        keys_form = QFormLayout(keys)
+        # Only shown when an installed game has no q3key (see refresh).
+        self.keys_group = QGroupBox("CD keys")
+        keys_form = self.keys_form = QFormLayout(self.keys_group)
+        keys_note = QLabel(
+            "Steam did not provide these keys. Copy them from the Steam client "
+            "(Manage → CD Keys) and save them here."
+        )
+        keys_note.setWordWrap(True)
+        keys_note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+        keys_form.addRow(keys_note)
         self.quake3_key = QLineEdit()
         self.team_arena_key = QLineEdit()
         for field in (self.quake3_key, self.team_arena_key):
@@ -200,7 +208,7 @@ class MainWindow(QMainWindow):
         keys_form.addRow(f"{QUAKE3.title}:", self.quake3_key)
         keys_form.addRow(f"{TEAM_ARENA.title}:", self.team_arena_key)
         keys_form.addRow(save_keys)
-        right.addWidget(keys)
+        right.addWidget(self.keys_group)
         right.addStretch()
         layout.addLayout(right, stretch=1)
         return tab
@@ -271,10 +279,16 @@ class MainWindow(QMainWindow):
         self.install_button.setText("Update" if has_quake3 else "Install")
         self.open_folder.setEnabled(folder.is_dir())
 
+        # Ask for a key only for installed games whose q3key is missing or invalid.
+        missing = False
         for game, field in ((QUAKE3, self.quake3_key), (TEAM_ARENA, self.team_arena_key)):
-            key = q3key.read(folder, game.game_dir)
-            field.setText(q3key.display(key) if key else "")
-            field.setEnabled(game in installed)
+            needed = game in installed and q3key.read(folder, game.game_dir) is None
+            self.keys_form.setRowVisible(field, needed)
+            field.setEnabled(needed)
+            if not needed:
+                field.clear()
+            missing = missing or needed
+        self.keys_group.setVisible(missing)
 
     @property
     def busy(self) -> bool:

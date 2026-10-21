@@ -33,8 +33,8 @@ def test_window_reflects_install_folder(window, tmp_path):
     assert window.games.count() == 1
     assert window.install_button.text() == "Update"
     assert not window.use_steam.isChecked()
-    assert window.quake3_key.text() == "ABCD-GHJL-PRST-W237"
-    assert not window.team_arena_key.isEnabled()
+    # Every installed game has its key, so the CD keys section stays hidden.
+    assert window.keys_group.isHidden()
 
 
 def test_empty_folder_suggests_steam(window, tmp_path):
@@ -144,3 +144,43 @@ def test_every_mod_is_listed_and_installed(window, monkeypatch):
     except RuntimeError:
         pass
     assert started["mods"] == [mod.id for mod in MODS]
+
+
+def install_with_keys(tmp_path, keys):
+    folder = tmp_path / "q3"
+    for game_dir in ("baseq3", "missionpack"):
+        (folder / game_dir).mkdir(parents=True)
+        (folder / game_dir / "pak0.pk3").write_text("")
+    for game_dir, key in keys.items():
+        (folder / game_dir / "q3key").write_text(key + "\n")
+    return folder
+
+
+def test_keys_section_asks_only_for_missing_keys(window, tmp_path):
+    folder = install_with_keys(tmp_path, {"baseq3": "abcdghjlprstw237"})
+    window.folder.setText(str(folder))
+    window.refresh()
+
+    assert not window.keys_group.isHidden()
+    assert not window.keys_form.isRowVisible(window.quake3_key)
+    assert window.keys_form.isRowVisible(window.team_arena_key)
+
+    # Saving the missing key hides the section again.
+    window.team_arena_key.setText("BCDG-HJLP-RSTW-2373-a7")
+    window.save_keys()
+    assert (folder / "missionpack" / "q3key").read_text()[:16] == "bcdghjlprstw2373"
+    assert window.keys_group.isHidden()
+
+
+def test_keys_section_hidden_without_games(window, tmp_path):
+    window.folder.setText(str(tmp_path / "empty"))
+    window.refresh()
+    assert window.keys_group.isHidden()
+
+
+def test_invalid_key_file_counts_as_missing(window, tmp_path):
+    folder = install_with_keys(tmp_path, {"baseq3": "not a key", "missionpack": "bcdghjlprstw2373"})
+    window.folder.setText(str(folder))
+    window.refresh()
+    assert window.keys_form.isRowVisible(window.quake3_key)
+    assert not window.keys_form.isRowVisible(window.team_arena_key)
