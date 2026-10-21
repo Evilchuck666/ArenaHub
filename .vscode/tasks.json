@@ -2,7 +2,15 @@
     "version": "2.0.0",
     "tasks": [
         { "label": "uv sync", "type": "shell", "command": "uv sync", "problemMatcher": [] },
-        { "label": "Ejecutar ArenaHub", "type": "shell", "command": "uv run arenahub", "problemMatcher": [] },
+        { "label": "Run ArenaHub", "type": "shell", "command": "uv run arenahub", "problemMatcher": [] },
+        {
+            "label": "Tests",
+            "type": "shell",
+            "command": "uv run pytest",
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": []
+        },
+        { "label": "Lint", "type": "shell", "command": "uv run ruff check src tests scripts", "problemMatcher": [] },
         {
             "label": "Build onefile (PyInstaller)",
             "type": "shell",

@@ -1,23 +1,134 @@
 # ArenaHub
 
-Aplicación de escritorio multiplataforma en Python + Qt6 (PySide6).
+**Quake III Arena, Team Arena and the classic mods, set up in one window.**
 
-## Preparar el entorno
+ArenaHub is a desktop installer and launcher for Quake III Arena on GNU/Linux,
+Windows and macOS. It downloads your own Steam copy of the game, writes your CD
+keys, installs the [Quake3e](https://github.com/ec-/Quake3e) engine and adds
+the mods you choose. Then you play from the same window.
 
-| Sistema   | Comando                                   |
-|-----------|-------------------------------------------|
-| GNU/Linux | `./scripts/setup_linux.sh`                |
-| macOS     | `./scripts/setup_macos.sh`                |
-| Windows   | `scripts\setup_windows.bat`               |
+## What it installs
 
-El script instala [uv](https://docs.astral.sh/uv/) si falta, un Python gestionado por uv y todas las dependencias en `.venv/`.
+| Game | Source |
+| --- | --- |
+| **Quake III Arena** | Your Steam library (app 2200), through SteamCMD |
+| **Quake III: Team Arena** | Included in the same Steam download when your copy has it |
+| **Challenge ProMode Arena** 1.53 + full map pack | [playmorepromode.com](https://playmorepromode.com/downloads) |
+| **OSP Tourney DM/CA/CTF** 1.03a | [osp.dget.cc](https://osp.dget.cc/), mirrored by mirrorservice.org |
+| **Rocket Arena 3** 1.80 | mirrorservice.org (QuakeUnity archive) |
+| **Threewave CTF** 1.6 + 1.7 update | mirrorservice.org (QuakeUnity archive) |
 
-## Uso
+Every mod download is pinned to a SHA-256 checksum. Windows-only executables in
+the archives (old engines, server tools) are not installed.
+
+Rocket Arena 3 only ships its server code as 32-bit native libraries. With
+Quake3e you can join Rocket Arena servers, but you cannot host local matches.
+
+## What you need
+
+- A **Steam account that owns Quake III Arena**. Team Arena is optional.
+- An Internet connection and about 2 GB of free space.
+- **GNU/Linux:** SDL2 for Quake3e. SteamCMD also needs 32-bit glibc
+  (Arch/Artix: `sdl2` and `lib32-glibc`; Debian/Ubuntu: `libsdl2-2.0-0` and
+  `lib32gcc-s1`). Qt needs `libxkbcommon` and `libxkbcommon-x11`.
+- **macOS on Apple Silicon:** Rosetta 2, because SteamCMD is an Intel binary
+  (`softwareupdate --install-rosetta --agree-to-license`).
+
+The ArenaHub executable bundles its own Python and Qt. You don't need to install
+either one.
+
+## How it works
+
+1. Choose an installation folder, enter your Steam username, pick the mods and
+   press **Install**.
+2. ArenaHub asks for your Steam password. It logs in to Steam and requests the
+   CD keys for Quake III Arena and Team Arena, just like *Manage → CD Keys* in
+   the Steam client.
+3. SteamCMD downloads the game. Steam may ask for a Steam Guard code a second
+   time, because SteamCMD keeps its own session.
+4. ArenaHub copies `baseq3` and `missionpack` into the folder, writes the keys to
+   `baseq3/q3key` and `missionpack/q3key`, installs Quake3e and extracts the mods.
+5. In the **Play** tab, pick a game and press **Play**. Your player name, mouse
+   sensitivity and renderer (OpenGL or Vulkan) are applied on every launch.
+
+If Steam returns no key, you can type it into the **CD keys** section yourself.
+The keys only matter on servers that enforce authentication (`sv_strictauth 1`).
+
+Everything lives in the installation folder. The engine runs with
+`fs_basepath` and `fs_homepath` pointing there, so configs, demos and screenshots
+stay in that folder too. SteamCMD is kept for later updates in:
+
+- `~/.local/share/ArenaHub/steamcmd` on Linux
+- `%LOCALAPPDATA%\ArenaHub\steamcmd` on Windows
+- `~/Library/Application Support/ArenaHub/steamcmd` on macOS
+
+### Your Steam account
+
+ArenaHub never stores or logs your password or Steam Guard codes. The password
+goes to Steam through the standard login flow, and to SteamCMD through its
+terminal prompt. It is never passed as a command-line argument. SteamCMD may
+remember its own login session.
+
+## Development
+
+You need nothing but this repository. The setup script installs
+[uv](https://docs.astral.sh/uv/) if it is missing, then a uv-managed Python and
+every dependency into `.venv/`. It never uses the system Python.
+
+| System | Command |
+| --- | --- |
+| GNU/Linux | `./scripts/setup_linux.sh` |
+| macOS | `./scripts/setup_macos.sh` |
+| Windows | `scripts\setup_windows.bat` |
 
 ```bash
-uv run arenahub                                        # ejecutar
+uv run arenahub                                        # run from source
 uv run pytest                                          # tests
-uv run pyinstaller ArenaHub.spec --clean --noconfirm   # ejecutable onefile en dist/
+uv run ruff check src tests scripts                    # lint
+uv run pyinstaller ArenaHub.spec --clean --noconfirm   # single-file build in dist/
 ```
 
-PyInstaller no hace compilación cruzada: genera el binario para el SO donde se ejecuta.
+Open `ArenaHub.code-workspace` in VS Code. The workspace already points at
+`.venv`, includes a debug configuration (F5) and has tasks for running, testing
+and building.
+
+Add dependencies with `uv add <package>` so that `pyproject.toml` and `uv.lock`
+stay in sync. If a new package is loaded dynamically, declare it in
+`ArenaHub.spec`: list it in `REQUIRED` and add it to `hiddenimports` or `datas`.
+The build stops if something in `REQUIRED` cannot be imported.
+
+### Project layout
+
+```text
+src/arenahub/
+  __main__.py      entry point (GUI, --smoke-test, --steam-helper)
+  steam_helper.py  Steam client process that fetches CD keys (steam-next + gevent)
+  core/            installation logic, no Qt: catalog, downloads, SteamCMD, keys, launcher
+  gui/             Qt window and background worker
+tests/             pytest suite; no network or Steam account needed
+assets/icons/      application icon (regenerate with scripts/make_icons.py)
+```
+
+The Steam helper runs as a separate process, which is the same executable
+started with `--steam-helper`. steam-next needs gevent's monkey-patching, and
+that does not mix with Qt in a single process.
+
+### Building
+
+```bash
+uv run pyinstaller ArenaHub.spec --clean --noconfirm
+QT_QPA_PLATFORM=offscreen dist/ArenaHub --smoke-test   # the window opens and closes
+dist/ArenaHub --steam-helper --self-test               # the Steam client is bundled
+```
+
+PyInstaller does not cross-compile, so build on each target system and
+architecture. The result is a single executable (`dist/ArenaHub` or
+`dist/ArenaHub.exe`) that needs no Python on the target machine.
+
+## Credits
+
+Built with Qt6 / PySide6, [steam-next](https://github.com/fabieu/steam-next),
+SteamCMD and Quake3e. The CD key request follows
+[SteamKit2](https://github.com/SteamRE/SteamKit). Quake III Arena is a trademark of
+id Software. The mods belong to their respective authors. ArenaHub is not
+affiliated with id Software, Bethesda or Valve.

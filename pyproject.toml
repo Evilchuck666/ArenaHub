@@ -1,11 +1,15 @@
 [project]
 name = "arenahub"
 version = "0.1.0"
-description = "ArenaHub - aplicación de escritorio Qt6"
+description = "Installer and launcher for Quake III Arena, Team Arena and classic mods"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "certifi>=2026.10.19",
     "PySide6>=6.8",
+    "pywinpty>=2.0 ; sys_platform == 'win32'",
+    "requests>=2.32,<3",
+    "steam-next[client]>=3.0,<4",
 ]
 
 [project.scripts]
@@ -26,9 +30,12 @@ build-backend = "hatchling.build"
 packages = ["src/arenahub"]
 
 [tool.uv]
-# Usar siempre un Python gestionado por uv (evita problemas con el Python del sistema)
+# Always use a uv-managed Python, never the system one
 python-preference = "only-managed"
 
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE", "PLW"]

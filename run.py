@@ -1,4 +1,4 @@
-# Punto de entrada para PyInstaller
+# Entry point for PyInstaller (see ArenaHub.spec)
 import sys
 
 from arenahub.__main__ import main
