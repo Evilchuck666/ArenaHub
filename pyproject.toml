@@ -1,6 +1,6 @@
 [project]
 name = "arenahub"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Installer and launcher for Quake III Arena, Team Arena and classic mods"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
@@ -25,6 +25,10 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+# Single source of truth for the version: bump it there before a release.
+path = "src/arenahub/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/arenahub"]

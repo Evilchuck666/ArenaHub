@@ -117,13 +117,36 @@ that does not mix with Qt in a single process.
 
 ```bash
 uv run pyinstaller ArenaHub.spec --clean --noconfirm
-QT_QPA_PLATFORM=offscreen dist/ArenaHub --smoke-test   # the window opens and closes
-dist/ArenaHub --steam-helper --self-test               # the Steam client is bundled
+uv run python scripts/package.py   # verify the binary from an empty folder, then archive it
 ```
+
+`scripts/package.py` copies the executable to a temporary folder and runs its
+Steam helper self-test and a GUI smoke test there. It then packs the
+executable as `dist/ArenaHub-<system>-<arch>.tar.gz` (Linux) or `.zip`
+(Windows, macOS).
 
 PyInstaller does not cross-compile, so build on each target system and
 architecture. The result is a single executable (`dist/ArenaHub` or
 `dist/ArenaHub.exe`) that needs no Python on the target machine.
+
+### GitHub Actions
+
+`.github/workflows/build.yml` builds, tests and packages ArenaHub for Linux
+x64, Windows x64, macOS Intel and macOS Apple Silicon. It is **disabled by
+default**:
+
+- **Pushes to `main` and pull requests** only build when the repository variable
+  `ARENAHUB_CI` is `true` (*Settings → Secrets and variables → Actions →
+  Variables*). Otherwise the run is skipped and uses no minutes.
+- **Actions → Build desktop app → Run workflow** always works. Leave the version
+  empty to just build; the packages are attached to the run as artifacts.
+  Enter a version such as `1.0.0` to also publish a GitHub release with the
+  four packages and a `SHA256SUMS.txt`.
+
+To release, bump `__version__` in `src/arenahub/__init__.py` first: the
+workflow refuses a version that doesn't match it, or one whose tag already
+exists. The packages are not signed, so macOS Gatekeeper and Windows
+SmartScreen will warn on first launch.
 
 ## Credits
 
