@@ -44,6 +44,8 @@ hiddenimports = [
 ]
 # The window uses the PNG; shortcuts use the SVG (Linux), PNG (macOS) or ICO (Windows).
 datas = [(str(ICONS / name), "assets/icons") for name in ("arenahub.png", "arenahub.svg", "arenahub.ico")]
+# Templates for the GNU/Linux shortcuts.
+datas += [(str(link), "assets/links") for link in sorted((ROOT / "assets" / "links").glob("*.desktop"))]
 # Game configs copied into the installation (autoexec.cfg, game.cfg, player.cfg per game).
 datas += [
     (str(cfg), str(cfg.parent.relative_to(ROOT)))

@@ -88,7 +88,7 @@ time, so ArenaHub does not need to be running:
 
 | System | Shortcut |
 | --- | --- |
-| GNU/Linux | `~/.local/share/applications/arenahub-<game>.desktop`, in the application menu. It is made from the template in [`assets/links/`](assets/links/), downloaded from this repository as QuakeBundle does. The templates also explain how to install a shortcut by hand. |
+| GNU/Linux | `~/.local/share/applications/arenahub-<game>.desktop`, in the application menu. It is made from the template in [`assets/links/`](assets/links/), which ships inside ArenaHub as in QuakeBundle, so no download is needed. The templates also explain how to install a shortcut by hand. |
 | macOS | `~/Applications/<Game>.app`, a small application built on Automator's application stub, with the ArenaHub icon. It opens without Terminal. |
 | Windows | `<Game>.lnk` on your Desktop, including a Desktop redirected to OneDrive. |
 

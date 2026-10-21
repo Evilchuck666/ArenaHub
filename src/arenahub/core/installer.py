@@ -74,7 +74,7 @@ def install(ctx: Context, options: InstallOptions) -> InstallReport:
         ctx.stage("Creating shortcuts")
         for game in launcher.installed_games(install_dir):
             try:
-                shortcut = shortcuts.create(ctx, install_dir, game, options.renderer)
+                shortcut = shortcuts.create(install_dir, game, options.renderer)
                 report.shortcuts.append(shortcut)
             except Exception as exc:  # noqa: BLE001 - a shortcut must not fail the install
                 report.warnings.append(f"Could not create a shortcut for {game.title}: {exc}")

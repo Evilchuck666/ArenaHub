@@ -1,7 +1,7 @@
 """Per-user shortcuts to the installed games, with each platform's own facilities.
 
 - GNU/Linux: a .desktop entry in the application menu, made from the template
-  in assets/links/ (downloaded from the repository, as QuakeBundle does).
+  in assets/links/ that ships inside ArenaHub, as QuakeBundle does.
 - macOS: a small application in ~/Applications built on Automator's
   application stub, so it opens like any app, with its icon and no Terminal.
 - Windows: a .lnk on the user's Desktop, made by PowerShell.
@@ -20,12 +20,9 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from . import launcher, net, paths
+from . import launcher, paths
 from .catalog import Game
-from .context import Context
 from .engine import Renderer
-
-TEMPLATE_URL = "https://raw.githubusercontent.com/Evilchuck666/ArenaHub/main/assets/links/{name}"
 
 AUTOMATOR_STUB = Path(
     "/System/Library/CoreServices/Automator Application Stub.app/Contents/MacOS/"
@@ -35,7 +32,7 @@ AUTOMATOR_STUB = Path(
 ICONS = {"linux": "arenahub.svg", "macos": "arenahub.png", "windows": "arenahub.ico"}
 
 
-def create(ctx: Context, install_dir: Path, game: Game, renderer: Renderer) -> Path:
+def create(install_dir: Path, game: Game, renderer: Renderer) -> Path:
     """Create or replace the shortcut for game and return where it was written."""
     argv = launcher.command(install_dir, game, renderer)
     icon = _copy_icon(install_dir)
@@ -45,7 +42,7 @@ def create(ctx: Context, install_dir: Path, game: Game, renderer: Renderer) -> P
         case "macos":
             return _macos(install_dir, game, argv, icon)
         case _:
-            return _linux(ctx, install_dir, game, argv, icon)
+            return _linux(install_dir, game, argv, icon)
 
 
 def shortcut_name(game: Game) -> str:
@@ -123,7 +120,7 @@ def fill_desktop_template(template: str, replacements: dict[str, str]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _linux(ctx: Context, install_dir: Path, game: Game, argv: list[str], icon: Path) -> Path:
+def _linux(install_dir: Path, game: Game, argv: list[str], icon: Path) -> Path:
     data_home = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
     directory = data_home / "applications"
     directory.mkdir(parents=True, exist_ok=True)
@@ -131,10 +128,9 @@ def _linux(ctx: Context, install_dir: Path, game: Game, argv: list[str], icon: P
 
     with tempfile.TemporaryDirectory(prefix=".arenahub-shortcut-", dir=directory) as tmp:
         staged = Path(tmp) / destination.name
-        url = TEMPLATE_URL.format(name=destination.name)
-        net.fetch(ctx, (url,), staged, label=f"{destination.name} template")
+        template = paths.resource("links", destination.name)
         content = fill_desktop_template(
-            staged.read_text(encoding="utf-8"),
+            template.read_text(encoding="utf-8"),
             {
                 "Name": desktop_value(game.title),
                 "Comment": desktop_value(game.description),

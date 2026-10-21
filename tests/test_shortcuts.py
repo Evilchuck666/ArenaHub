@@ -1,16 +1,12 @@
 import plistlib
-import shutil
 import stat
 from pathlib import Path
 
 import pytest
 
-from arenahub.core import net, paths, shortcuts
+from arenahub.core import paths, shortcuts
 from arenahub.core.catalog import CPMA, GAMES, QUAKE3, TEAM_ARENA
-from arenahub.core.context import TaskError
 from arenahub.core.engine import Renderer
-
-from .conftest import RecordingContext
 
 TEMPLATES = Path(__file__).resolve().parent.parent / "assets" / "links"
 
@@ -57,27 +53,13 @@ def test_template_problems_are_reported():
     ]
 
 
-@pytest.fixture
-def templates_from_repository(monkeypatch):
-    urls = []
-
-    def fetch(ctx, url_list, dest, sha256=None, label=""):
-        urls.extend(url_list)
-        shutil.copyfile(TEMPLATES / Path(url_list[0]).name, dest)
-        return dest
-
-    monkeypatch.setattr(net, "fetch", fetch)
-    return urls
-
-
-def test_linux_shortcut(tmp_path, install_dir, monkeypatch, templates_from_repository):
+def test_linux_shortcut(tmp_path, install_dir, monkeypatch):
     monkeypatch.setattr(paths, "system", lambda: "linux")
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
 
-    path = shortcuts.create(RecordingContext(), install_dir, CPMA, Renderer.OPENGL)
+    path = shortcuts.create(install_dir, CPMA, Renderer.OPENGL)
 
     assert path == tmp_path / "data" / "applications" / "arenahub-cpma.desktop"
-    assert templates_from_repository == [shortcuts.TEMPLATE_URL.format(name=path.name)]
     entry = dict(
         line.split("=", 1)
         for line in path.read_text().splitlines()
@@ -96,16 +78,17 @@ def test_linux_shortcut(tmp_path, install_dir, monkeypatch, templates_from_repos
     assert [p.name for p in path.parent.iterdir()] == [path.name]  # no staging left behind
 
 
-def test_linux_shortcut_without_network(tmp_path, install_dir, monkeypatch):
+def test_linux_shortcut_needs_its_template(tmp_path, install_dir, monkeypatch):
     monkeypatch.setattr(paths, "system", lambda: "linux")
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
+    real = paths.resource
 
-    def offline(*args, **kwargs):
-        raise TaskError("no network")
+    def resource(*parts):
+        return tmp_path / "missing" / parts[-1] if parts[0] == "links" else real(*parts)
 
-    monkeypatch.setattr(net, "fetch", offline)
-    with pytest.raises(TaskError):
-        shortcuts.create(RecordingContext(), install_dir, QUAKE3, Renderer.OPENGL)
+    monkeypatch.setattr(paths, "resource", resource)
+    with pytest.raises(OSError):
+        shortcuts.create(install_dir, QUAKE3, Renderer.OPENGL)
     assert list((tmp_path / "data" / "applications").iterdir()) == []
 
 
@@ -122,7 +105,7 @@ def macos(tmp_path, monkeypatch):
 
 
 def test_macos_app(tmp_path, install_dir, macos):
-    app = shortcuts.create(RecordingContext(), install_dir, TEAM_ARENA, Renderer.VULKAN)
+    app = shortcuts.create(install_dir, TEAM_ARENA, Renderer.VULKAN)
 
     assert app == tmp_path / "home" / "Applications" / "Quake III Team Arena.app"
     contents = app / "Contents"
@@ -140,9 +123,9 @@ def test_macos_app(tmp_path, install_dir, macos):
 
 
 def test_macos_app_is_replaced(tmp_path, install_dir, macos):
-    first = shortcuts.create(RecordingContext(), install_dir, QUAKE3, Renderer.OPENGL)
+    first = shortcuts.create(install_dir, QUAKE3, Renderer.OPENGL)
     (first / "Contents" / "old-file").write_text("old")
-    second = shortcuts.create(RecordingContext(), install_dir, QUAKE3, Renderer.OPENGL)
+    second = shortcuts.create(install_dir, QUAKE3, Renderer.OPENGL)
     assert second == first
     assert not (second / "Contents" / "old-file").exists()
     assert sorted(p.name for p in first.parent.iterdir()) == ["Quake III Arena.app"]
@@ -160,7 +143,7 @@ def test_windows_shortcut(tmp_path, install_dir, monkeypatch):
         return f"{link}\r\n"
 
     monkeypatch.setattr(shortcuts, "_run", run)
-    assert shortcuts.create(RecordingContext(), install_dir, TEAM_ARENA, Renderer.OPENGL) == link
+    assert shortcuts.create(install_dir, TEAM_ARENA, Renderer.OPENGL) == link
 
     assert seen["command"][:4] == [
         "powershell.exe",
@@ -179,4 +162,4 @@ def test_windows_shortcut_must_exist(install_dir, monkeypatch):
     monkeypatch.setattr(paths, "system", lambda: "windows")
     monkeypatch.setattr(shortcuts, "_run", lambda command, env=None: "")
     with pytest.raises(OSError, match="did not create"):
-        shortcuts.create(RecordingContext(), install_dir, QUAKE3, Renderer.OPENGL)
+        shortcuts.create(install_dir, QUAKE3, Renderer.OPENGL)

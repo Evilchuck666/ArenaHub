@@ -142,7 +142,7 @@ def test_shortcut_failures_are_warnings(tmp_path, offline, monkeypatch):
 
     created = []
 
-    def create(ctx, install_dir, game, renderer):
+    def create(install_dir, game, renderer):
         if game.id == "missionpack":
             raise OSError("template not found")
         created.append(game.id)
