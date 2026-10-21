@@ -86,3 +86,31 @@ def test_sensitivity_changes_are_saved_after_a_pause(window, tmp_path):
     assert window._player_timer.isActive()
     QTest.qWait(window._player_timer.interval() + 200)
     assert configs.read_player(folder) == configs.Player("Ranger", 7.5)
+
+
+@pytest.mark.parametrize("typed, text, value", [("2,75", "2.75", 2.75), ("1.5", "1.5", 1.5)])
+def test_sensitivity_accepts_comma_or_dot(window, typed, text, value):
+    from PySide6.QtCore import QLocale
+    from PySide6.QtTest import QTest
+
+    # A Spanish system would normally use ',' as the decimal separator.
+    previous = QLocale()
+    QLocale.setDefault(QLocale(QLocale.Language.Spanish, QLocale.Country.Spain))
+    try:
+        from arenahub.gui.widgets import DecimalSpinBox
+
+        spin = DecimalSpinBox()
+        spin.setRange(0.01, 30.0)
+        spin.setDecimals(2)
+        spin.lineEdit().selectAll()
+        QTest.keyClicks(spin.lineEdit(), typed)
+        assert spin.lineEdit().text() == text
+        assert spin.value() == value
+    finally:
+        QLocale.setDefault(previous)
+
+    # The window's own field behaves the same way.
+    window.sensitivity.lineEdit().selectAll()
+    QTest.keyClicks(window.sensitivity.lineEdit(), typed)
+    assert window.sensitivity.lineEdit().text() == text
+    assert window.sensitivity.value() == value

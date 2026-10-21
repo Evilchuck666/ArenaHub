@@ -9,7 +9,6 @@ from PySide6.QtGui import QCloseEvent, QDesktopServices, QIcon, QPalette
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
-    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QGroupBox,
@@ -35,6 +34,7 @@ from ..core.catalog import MODS, QUAKE3, TEAM_ARENA
 from ..core.context import Prompt
 from ..core.engine import Renderer
 from ..core.installer import InstallOptions, InstallReport
+from .widgets import DecimalSpinBox
 from .worker import InstallWorker
 
 STEAM_NOTE = (
@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
         self.player_name = QLineEdit()
         self.player_name.setMaxLength(configs.MAX_NAME_LENGTH)
         self.player_name.setPlaceholderText("Your name in game")
-        self.sensitivity = QDoubleSpinBox()
+        self.sensitivity = DecimalSpinBox()
         self.sensitivity.setRange(0.01, 30.0)
         self.sensitivity.setDecimals(2)
         self.sensitivity.setSingleStep(0.1)
