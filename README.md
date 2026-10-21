@@ -83,6 +83,7 @@ every dependency into `.venv/`. It never uses the system Python.
 
 ```bash
 uv run arenahub                                        # run from source
+python3 run.py                                         # same; any Python hands over to .venv
 uv run pytest                                          # tests
 uv run ruff check src tests scripts                    # lint
 uv run pyinstaller ArenaHub.spec --clean --noconfirm   # single-file build in dist/
