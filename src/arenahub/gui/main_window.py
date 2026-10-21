@@ -182,7 +182,7 @@ class MainWindow(QMainWindow):
         self.team_arena_key = QLineEdit()
         for field in (self.quake3_key, self.team_arena_key):
             field.setPlaceholderText("XXXX-XXXX-XXXX-XXXX")
-            field.setMaxLength(19)
+            field.setMaxLength(24)  # Team Arena keys come with a checksum: ...-XXXX-XX
         save_keys = QPushButton("Save keys")
         save_keys.clicked.connect(self.save_keys)
         keys_form.addRow(f"{QUAKE3.title}:", self.quake3_key)
