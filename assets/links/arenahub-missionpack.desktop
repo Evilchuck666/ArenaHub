@@ -9,7 +9,7 @@
 Type=Application
 Name=Quake III: Team Arena
 Comment=The official expansion, when your Steam account owns it.
-Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game missionpack +exec arenahub.cfg
+Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game missionpack
 Path=@INSTALL_DIR@
 Icon=@INSTALL_DIR@/arenahub.svg
 TryExec=@ENGINE@

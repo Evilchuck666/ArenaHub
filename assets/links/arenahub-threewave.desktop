@@ -9,7 +9,7 @@
 Type=Application
 Name=Threewave CTF
 Comment=Threewave CTF 1.6 with the 1.7 update and its map packs.
-Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game threewave +exec arenahub.cfg
+Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game threewave
 Path=@INSTALL_DIR@
 Icon=@INSTALL_DIR@/arenahub.svg
 TryExec=@ENGINE@

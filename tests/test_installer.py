@@ -153,3 +153,19 @@ def test_shortcut_failures_are_warnings(tmp_path, offline, monkeypatch):
     report = installer.install(RecordingContext(), options)
     assert created == ["baseq3"]
     assert any("Quake III: Team Arena: template not found" in w for w in report.warnings)
+
+
+def test_install_writes_game_configs(tmp_path, offline):
+    from arenahub.core import configs
+
+    folder = tmp_path / "q3"
+    player = configs.Player("Ranger", 2.5)
+    options = installer.InstallOptions(folder, "me", "secret", mods=["cpma"], player=player)
+    installer.install(RecordingContext(), options)
+
+    for game_dir in ("baseq3", "missionpack", "cpma"):
+        for name in configs.CONFIG_FILES:
+            assert (folder / game_dir / name).is_file(), f"{game_dir}/{name}"
+    assert configs.read_player(folder) == player
+    text = (folder / "cpma" / "player.cfg").read_text()
+    assert configs.read_value(text, "sensitivity") == "2.5"

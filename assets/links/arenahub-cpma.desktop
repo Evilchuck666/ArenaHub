@@ -9,7 +9,7 @@
 Type=Application
 Name=Challenge ProMode Arena
 Comment=CPMA 1.53 with the full CPMA map pack.
-Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game cpma +exec arenahub.cfg
+Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game cpma
 Path=@INSTALL_DIR@
 Icon=@INSTALL_DIR@/arenahub.svg
 TryExec=@ENGINE@

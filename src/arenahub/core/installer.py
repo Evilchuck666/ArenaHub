@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..steam_depots import PART_SUFFIX
-from . import engine, launcher, net, q3key, shortcuts, steam
+from . import configs, engine, launcher, net, q3key, shortcuts, steam
 from .archive import extract
 from .catalog import QUAKE3, QUAKE3_APP_ID, QUAKE3_DIRS, TEAM_ARENA, TEAM_ARENA_APP_ID, game_by_id
 from .context import Context, TaskError
@@ -24,6 +24,8 @@ class InstallOptions:
     steam: bool = True
     """Download (or verify) Quake III Arena from Steam and fetch the CD keys."""
     mods: list[str] = field(default_factory=list)
+    player: configs.Player | None = None
+    """Name and sensitivity to write into the game configs."""
     shortcuts: bool = False
     renderer: engine.Renderer = engine.Renderer.OPENGL
 
@@ -58,6 +60,15 @@ def install(ctx: Context, options: InstallOptions) -> InstallReport:
         _install_mod(ctx, install_dir, downloads, mod_id)
 
     shutil.rmtree(staging, ignore_errors=True)
+
+    ctx.stage("Writing game configs")
+    for path in configs.install(install_dir):
+        ctx.log(f"Added {path.relative_to(install_dir)}")
+    if options.player:
+        try:
+            configs.save_player(install_dir, options.player)
+        except ValueError as exc:
+            report.warnings.append(f"Player settings not saved: {exc}")
 
     if options.shortcuts:
         ctx.stage("Creating shortcuts")

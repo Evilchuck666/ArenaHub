@@ -9,7 +9,7 @@
 Type=Application
 Name=OSP Tourney DM/CA/CTF
 Comment=Orange Smoothie Productions 1.03a.
-Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game osp +exec arenahub.cfg
+Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +set fs_game osp
 Path=@INSTALL_DIR@
 Icon=@INSTALL_DIR@/arenahub.svg
 TryExec=@ENGINE@

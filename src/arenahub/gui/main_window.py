@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt, QThread, QUrl
+from PySide6.QtCore import QSettings, Qt, QThread, QTimer, QUrl
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QIcon, QPalette
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -30,7 +30,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import __version__
-from ..core import engine, launcher, paths, q3key
+from ..core import configs, engine, launcher, paths, q3key
 from ..core.catalog import MODS, QUAKE3, TEAM_ARENA
 from ..core.context import Prompt
 from ..core.engine import Renderer
@@ -55,6 +55,7 @@ class MainWindow(QMainWindow):
         self.thread: QThread | None = None
         self.worker: InstallWorker | None = None
         self._shown_folder: Path | None = None
+        self._loading_player = False
 
         central = QWidget()
         layout = QVBoxLayout(central)
@@ -161,19 +162,27 @@ class MainWindow(QMainWindow):
         player = QGroupBox("Player")
         form = QFormLayout(player)
         self.player_name = QLineEdit()
-        self.player_name.setMaxLength(32)
-        self.player_name.setPlaceholderText("Keep the in-game name")
+        self.player_name.setMaxLength(configs.MAX_NAME_LENGTH)
+        self.player_name.setPlaceholderText("Your name in game")
         self.sensitivity = QDoubleSpinBox()
-        self.sensitivity.setRange(0.0, 30.0)
+        self.sensitivity.setRange(0.01, 30.0)
         self.sensitivity.setDecimals(2)
         self.sensitivity.setSingleStep(0.1)
-        self.sensitivity.setSpecialValueText("Keep the in-game value")
+        # Both are written to every player.cfg as soon as they change (see save_player).
+        self._player_timer = QTimer(self, singleShot=True, interval=600)
+        self._player_timer.timeout.connect(self.save_player)
+        self.player_name.editingFinished.connect(self.save_player)
+        self.sensitivity.valueChanged.connect(self._player_changed)
         self.renderer = QComboBox()
         self.renderer.addItem("OpenGL", Renderer.OPENGL.value)
         self.renderer.addItem("Vulkan", Renderer.VULKAN.value)
         form.addRow("Name:", self.player_name)
         form.addRow("Mouse sensitivity:", self.sensitivity)
         form.addRow("Renderer:", self.renderer)
+        note = QLabel("Saved to the game's player.cfg files as you change them.")
+        note.setWordWrap(True)
+        note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+        form.addRow(note)
         right.addWidget(player)
 
         keys = QGroupBox("CD keys")
@@ -199,8 +208,12 @@ class MainWindow(QMainWindow):
         s = self.settings
         self.folder.setText(s.value("install_dir", str(paths.default_install_dir())))
         self.username.setText(s.value("username", ""))
-        self.player_name.setText(s.value("player_name", ""))
-        self.sensitivity.setValue(float(s.value("sensitivity", 0.0)))
+        self._show_player(
+            configs.Player(
+                s.value("player_name", "") or configs.Player.name,
+                float(s.value("sensitivity", configs.Player.sensitivity)),
+            )
+        )
         index = self.renderer.findData(s.value("renderer", Renderer.OPENGL.value))
         self.renderer.setCurrentIndex(max(index, 0))
         self.shortcuts.setChecked(s.value("shortcuts", "false") == "true")
@@ -248,9 +261,12 @@ class MainWindow(QMainWindow):
         has_engine = engine.executable(folder) is not None
         self.play_button.setEnabled(bool(installed) and has_engine and not self.busy)
         if folder != self._shown_folder:
-            # A new folder: suggest Steam only when the game is not there yet.
+            # A new folder: suggest Steam only when the game is not there yet, and
+            # show the player settings saved in its configs.
             self._shown_folder = folder
             self.use_steam.setChecked(not has_quake3)
+            if player := configs.read_player(folder):
+                self._show_player(player)
         self.username.setEnabled(self.use_steam.isChecked())
         self.install_button.setText("Update" if has_quake3 else "Install")
         self.open_folder.setEnabled(folder.is_dir())
@@ -274,6 +290,7 @@ class MainWindow(QMainWindow):
             mods=[mod_id for mod_id, box in self.mod_boxes.items() if box.isChecked()],
             shortcuts=self.shortcuts.isChecked(),
             renderer=Renderer(self.renderer.currentData()),
+            player=self._valid_player(),
         )
         if options.steam:
             if not options.username:
@@ -372,20 +389,58 @@ class MainWindow(QMainWindow):
 
     # Playing ----------------------------------------------------------------------
 
+    def _player(self) -> configs.Player:
+        return configs.Player(self.player_name.text().strip(), self.sensitivity.value())
+
+    def _valid_player(self) -> configs.Player | None:
+        player = self._player()
+        try:
+            configs.validate(player)
+        except ValueError:
+            return None
+        return player
+
+    def _show_player(self, player: configs.Player) -> None:
+        """Fill in the fields without saving them back."""
+        self._loading_player = True
+        try:
+            self.player_name.setText(player.name)
+            self.sensitivity.setValue(player.sensitivity)
+        finally:
+            self._loading_player = False
+
+    def _player_changed(self) -> None:
+        if not self._loading_player:
+            self._player_timer.start()
+
+    def save_player(self) -> bool:
+        """Write name and sensitivity into the player.cfg files of the installation."""
+        self._player_timer.stop()
+        if self._loading_player:
+            return True
+        player = self._player()
+        try:
+            configs.validate(player)
+        except ValueError as exc:
+            QMessageBox.warning(self, "ArenaHub", str(exc))
+            return False
+        self._save_settings()
+        try:
+            updated = configs.save_player(self.install_dir(), player)
+        except OSError as exc:
+            QMessageBox.warning(self, "ArenaHub", f"Could not save the player settings: {exc}")
+            return False
+        if updated:
+            self._set_status(f"Player settings saved to {len(updated)} config files")
+        return True
+
     def play(self) -> None:
         item = self.games.currentItem()
-        if item is None:
+        if item is None or not self.save_player():
             return
         game = item.data(Qt.ItemDataRole.UserRole)
-        self._save_settings()
-        sensitivity = self.sensitivity.value()
-        settings = launcher.PlayerSettings(
-            name=self.player_name.text(),
-            sensitivity=sensitivity if sensitivity > 0 else None,
-            renderer=Renderer(self.renderer.currentData()),
-        )
         try:
-            launcher.launch(self.install_dir(), game, settings)
+            launcher.launch(self.install_dir(), game, Renderer(self.renderer.currentData()))
         except OSError as exc:
             QMessageBox.critical(self, "ArenaHub", f"Could not start {game.title}: {exc}")
             return

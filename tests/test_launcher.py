@@ -15,24 +15,9 @@ def fake_install(tmp_path, names):
 
 def test_arguments_keep_everything_in_the_folder(tmp_path):
     args = launcher.arguments(tmp_path, QUAKE3)
-    assert args[:6] == ["+set", "fs_basepath", str(tmp_path), "+set", "fs_homepath", str(tmp_path)]
-    assert "fs_game" not in args
-    assert launcher.arguments(tmp_path, CPMA)[6:9] == ["+set", "fs_game", "cpma"]
-
-
-def test_player_cfg_is_sanitized(tmp_path):
-    settings = launcher.PlayerSettings(name='Bad"; quit;\nName', sensitivity=3.5)
-    path = launcher.write_player_cfg(tmp_path, TEAM_ARENA, settings)
-    assert path == tmp_path / "missionpack" / "arenahub.cfg"
-    content = path.read_text()
-    assert 'seta name "Bad quitName"' in content
-    assert 'seta sensitivity "3.5"' in content
-
-
-def test_empty_player_cfg_is_removed(tmp_path):
-    launcher.write_player_cfg(tmp_path, QUAKE3, launcher.PlayerSettings(name="x"))
-    assert launcher.write_player_cfg(tmp_path, QUAKE3, launcher.PlayerSettings()) is None
-    assert not (tmp_path / "baseq3" / "arenahub.cfg").exists()
+    assert args == ["+set", "fs_basepath", str(tmp_path), "+set", "fs_homepath", str(tmp_path)]
+    assert launcher.arguments(tmp_path, CPMA)[6:] == ["+set", "fs_game", "cpma"]
+    assert launcher.arguments(tmp_path, TEAM_ARENA)[6:] == ["+set", "fs_game", "missionpack"]
 
 
 def test_installed_games(tmp_path):

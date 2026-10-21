@@ -9,7 +9,7 @@
 Type=Application
 Name=Quake III Arena
 Comment=The original game, from your Steam library.
-Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@" +exec arenahub.cfg
+Exec="@ENGINE@" +set fs_basepath "@INSTALL_DIR@" +set fs_homepath "@INSTALL_DIR@"
 Path=@INSTALL_DIR@
 Icon=@INSTALL_DIR@/arenahub.svg
 TryExec=@ENGINE@

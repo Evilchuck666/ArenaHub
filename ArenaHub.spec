@@ -44,6 +44,11 @@ hiddenimports = [
 ]
 # The window uses the PNG; shortcuts use the SVG (Linux), PNG (macOS) or ICO (Windows).
 datas = [(str(ICONS / name), "assets/icons") for name in ("arenahub.png", "arenahub.svg", "arenahub.ico")]
+# Game configs copied into the installation (autoexec.cfg, game.cfg, player.cfg per game).
+datas += [
+    (str(cfg), str(cfg.parent.relative_to(ROOT)))
+    for cfg in sorted((ROOT / "assets" / "cfg").glob("*/*.cfg"))
+]
 datas += copy_metadata("steam-next")
 binaries = []
 

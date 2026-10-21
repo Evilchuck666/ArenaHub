@@ -48,9 +48,9 @@ either one.
    SHA-1, and files that already match are not downloaded again, so **Update**
    only verifies the game. Existing `.cfg` files are never replaced.
 5. It writes the keys to `baseq3/q3key` and `missionpack/q3key`, installs
-   Quake3e and extracts the mods.
-6. In the **Play** tab, pick a game and press **Play**. Your player name, mouse
-   sensitivity and renderer (OpenGL or Vulkan) are applied on every launch.
+   Quake3e, extracts the mods and adds the game configs (see below).
+6. In the **Play** tab, pick a game and press **Play**, with the OpenGL or
+   Vulkan renderer.
 
 If Steam returns no key, you can type it into the **CD keys** section yourself.
 The keys only matter on servers that enforce authentication (`sv_strictauth 1`).
@@ -58,6 +58,23 @@ The keys only matter on servers that enforce authentication (`sv_strictauth 1`).
 Everything lives in the installation folder. The engine runs with
 `fs_basepath` and `fs_homepath` pointing there, so configs, demos and screenshots
 stay in that folder too.
+
+### Game configs
+
+Quake III Arena, Team Arena, CPMA and OSP get three config files in their
+folders, as in QuakeBundle:
+
+| File | What it holds |
+| --- | --- |
+| `autoexec.cfg` | Quake3e runs it at every start. It only runs the two files below. |
+| `game.cfg` | Key bindings, HUD, graphics, sound and server settings, in commented sections. |
+| `player.cfg` | Your name, mouse sensitivity and player model. |
+
+When you change your name or sensitivity in the **Play** tab, ArenaHub writes
+them straight into every `player.cfg` and leaves the rest of each file as it is.
+It only adds config files that are missing, so your own edits survive updates.
+Rocket Arena 3 and Threewave have no configs of their own and use `baseq3`'s.
+The originals live in [`assets/cfg/`](assets/cfg/).
 
 ### Shortcuts
 
@@ -122,6 +139,7 @@ src/arenahub/
 tests/             pytest suite; no network or Steam account needed
 assets/icons/      application icon (regenerate with scripts/make_icons.py)
 assets/links/      .desktop templates for the GNU/Linux shortcuts
+assets/cfg/        game configs copied into each game folder
 ```
 
 The Steam helper runs as a separate process, which is the same executable
