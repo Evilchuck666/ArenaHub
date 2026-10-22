@@ -426,3 +426,10 @@ def test_people_who_join_red_are_moved_to_blue(window, tmp_path, monkeypatch):
     assert "forceteam 0" not in window.log_view.toPlainText()  # bots stay on red
     tab.stop()
     assert wait_until(lambda: not tab.running)
+
+
+def test_folder_is_chosen_on_the_install_tab_only(window):
+    window.show()
+    for index in range(window.tabs.count()):
+        window.tabs.setCurrentIndex(index)
+        assert window.folder.isVisible() == (index == 0), window.tabs.tabText(index)

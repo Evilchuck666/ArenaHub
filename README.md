@@ -73,8 +73,9 @@ The **Install**, **Play**, **Server** and **Maps** tabs are on the left. The
 **Activity Center** on the right shows the installation steps, the progress,
 the activity log and a button to open the game folder.
 
-1. Choose an installation folder, enter your Steam username and press
-   **Install**. All the mods in the table above are always installed.
+1. In the **Install** tab, choose an installation folder, enter your Steam
+   username and press **Install**. All the mods in the table above are always
+   installed. The other tabs work on the folder chosen there.
 2. ArenaHub asks for your Steam password and, if your account uses Steam Guard,
    for its code. That single login is all it needs.
 3. It requests the CD keys for Quake III Arena and Team Arena, just like

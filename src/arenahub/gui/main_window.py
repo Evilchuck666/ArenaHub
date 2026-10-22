@@ -57,7 +57,7 @@ class Emblem(QSvgWidget):
 
     def __init__(self) -> None:
         super().__init__(str(paths.resource("icons", "arenahub-emblem.svg")))
-        self.setFixedSize(200, 120)
+        self.setFixedSize(150, 90)
         self.setAccessibleName("ArenaHub emblem")
 
 
@@ -118,25 +118,14 @@ class MainWindow(QMainWindow):
 
         hero = QHBoxLayout()
         words = QVBoxLayout()
+        words.setSpacing(6)
+        words.addStretch()
         words.addWidget(label("QUAKE III ARENA  ·  TEAM ARENA  ·  CLASSIC MODS", "eyebrow"))
         words.addWidget(label("Enter the arena.", "heading"))
-        words.addWidget(
-            label("Install it from your Steam library, play, or host your own server.", "muted")
-        )
+        words.addStretch()
         hero.addLayout(words, stretch=1)
         hero.addWidget(Emblem())
         column.addLayout(hero)
-
-        column.addWidget(label("Installation folder", "muted"))
-        row = QHBoxLayout()
-        self.folder = QLineEdit()
-        self.folder.setAccessibleName("Installation folder")
-        self.folder.editingFinished.connect(self.refresh)
-        browse = QPushButton("Browse…")
-        browse.clicked.connect(self._browse)
-        row.addWidget(self.folder, stretch=1)
-        row.addWidget(browse)
-        column.addLayout(row)
 
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
@@ -192,6 +181,21 @@ class MainWindow(QMainWindow):
 
     def _install_tab(self) -> QWidget:
         tab, layout = self._page()
+
+        # The folder is chosen here only; the other tabs work on the same one.
+        folder = QVBoxLayout()
+        folder.setSpacing(8)
+        folder.addWidget(label("Installation folder", "muted"))
+        row = QHBoxLayout()
+        self.folder = QLineEdit()
+        self.folder.setAccessibleName("Installation folder")
+        self.folder.editingFinished.connect(self.refresh)
+        browse = QPushButton("Browse…")
+        browse.clicked.connect(self._browse)
+        row.addWidget(self.folder, stretch=1)
+        row.addWidget(browse)
+        folder.addLayout(row)
+        layout.addLayout(folder)
 
         steam, form = panel("01   Quake III Arena from Steam")
         self.use_steam = QCheckBox("Download or verify the game and fetch the CD keys")
