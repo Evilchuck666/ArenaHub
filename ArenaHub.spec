@@ -16,6 +16,7 @@ ICONS = ROOT / "assets" / "icons"
 # from the environment, instead of producing a binary that fails later.
 REQUIRED = [
     "PySide6.QtWidgets",
+    "PySide6.QtSvgWidgets",
     "requests",
     "certifi",
     "gevent",
@@ -44,6 +45,9 @@ hiddenimports = [
 ]
 # The window uses the PNG; shortcuts use the SVG (Linux), PNG (macOS) or ICO (Windows).
 datas = [(str(ICONS / name), "assets/icons") for name in ("arenahub.png", "arenahub.svg", "arenahub.ico")]
+# The emblem in the window's header and the theme's small icons (arrows, check mark).
+datas += [(str(ICONS / "arenahub-emblem.svg"), "assets/icons")]
+datas += [(str(svg), "assets/icons/ui") for svg in sorted((ICONS / "ui").glob("*.svg"))]
 # Templates for the GNU/Linux shortcuts.
 datas += [(str(link), "assets/links") for link in sorted((ROOT / "assets" / "links").glob("*.desktop"))]
 # Game configs copied into the installation (autoexec.cfg, game.cfg, player.cfg per game).

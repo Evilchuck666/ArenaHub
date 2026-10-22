@@ -1,17 +1,18 @@
-"""ArenaHub's main window: installation on one tab, playing on the other."""
+"""ArenaHub's main window, laid out like QuakeBundle: tabs on the left, activity on the right."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, QSize, Qt, QThread, QTimer, QUrl
-from PySide6.QtGui import QCloseEvent, QDesktopServices, QIcon, QPalette
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QIcon
+from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFileDialog,
     QFormLayout,
-    QGroupBox,
+    QGridLayout,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -36,7 +37,9 @@ from ..core.catalog import MODS, QUAKE3, TEAM_ARENA, Game
 from ..core.context import Prompt
 from ..core.engine import Renderer
 from ..core.installer import InstallOptions, InstallReport
+from . import theme
 from .server_tab import ServerTab
+from .theme import COLORS, label, panel
 from .widgets import DecimalSpinBox
 from .worker import InstallWorker
 
@@ -45,6 +48,17 @@ STEAM_NOTE = (
     "it. Team Arena is downloaded too when your account owns it. Your password and Steam Guard "
     "code are only sent to Steam and are never stored by ArenaHub."
 )
+MAX_STAGES = 7
+"""Installation steps listed in the activity panel; older ones scroll away."""
+
+
+class Emblem(QSvgWidget):
+    """ArenaHub's crosshair emblem, drawn as a vector at any display scale."""
+
+    def __init__(self) -> None:
+        super().__init__(str(paths.resource("icons", "arenahub-emblem.svg")))
+        self.setFixedSize(200, 120)
+        self.setAccessibleName("ArenaHub emblem")
 
 
 class MainWindow(QMainWindow):
@@ -52,37 +66,41 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle(f"ArenaHub {__version__}")
         self.setWindowIcon(QIcon(str(paths.resource("icons", "arenahub.png"))))
-        self.resize(820, 720)
+        self.resize(1120, 850)
+        self.setMinimumSize(960, 700)
+        theme.apply(self)
 
         self.settings = QSettings()
         self.thread: QThread | None = None
         self.worker: InstallWorker | None = None
         self._shown_folder: Path | None = None
         self._loading_player = False
+        self._stages: list[QLabel] = []
 
         central = QWidget()
-        layout = QVBoxLayout(central)
-        layout.addLayout(self._folder_row())
+        outer = QVBoxLayout(central)
+        outer.setContentsMargins(28, 22, 28, 16)
+        outer.setSpacing(18)
+        header = QHBoxLayout()
+        header.addWidget(label("A  /  ARENAHUB", "eyebrow"))
+        header.addStretch()
+        header.addWidget(label("YOUR GATEWAY TO THE ARENA", "muted"))
+        outer.addLayout(header)
 
-        self.tabs = QTabWidget()
-        self.tabs.addTab(self._install_tab(), "Install")
-        self.tabs.addTab(self._play_tab(), "Play")
-        self.server_tab = ServerTab(self.install_dir)
-        self.tabs.addTab(self.server_tab, "Server")
-        self.tabs.addTab(self._maps_tab(), "Maps")
-        layout.addWidget(self.tabs, stretch=3)
+        columns = QHBoxLayout()
+        columns.setSpacing(24)
+        columns.addWidget(self._main_column(), stretch=1)
+        columns.addWidget(self._activity_panel())
+        outer.addLayout(columns, stretch=1)
 
-        self.status = QLabel("Ready")
-        self.progress = QProgressBar()
-        self.progress.setRange(0, 1000)
-        self.progress.setTextVisible(False)
-        self.log_view = QPlainTextEdit(readOnly=True)
-        self.log_view.setMaximumBlockCount(5000)
-        layout.addWidget(self.status)
-        layout.addWidget(self.progress)
-        layout.addWidget(self.log_view, stretch=2)
+        footer = QHBoxLayout()
+        footer.addWidget(label("QUAKE III ARENA  /  1999 → TODAY", "muted"))
+        footer.addStretch()
+        footer.addWidget(label(f"ArenaHub {__version__}  ·  Qt6  ·  Quake3e", "muted"))
+        outer.addLayout(footer)
 
         self.setCentralWidget(central)
+        theme.indent_spin_boxes(self)
         self.server_tab.log.connect(self.log_view.appendPlainText)
         self.server_tab.status.connect(self._set_status)
         self.server_tab.running_changed.connect(lambda _running: self._set_busy(self.busy))
@@ -92,83 +110,134 @@ class MainWindow(QMainWindow):
 
     # Layout -------------------------------------------------------------------
 
-    def _folder_row(self) -> QHBoxLayout:
+    def _main_column(self) -> QWidget:
+        content = QWidget()
+        column = QVBoxLayout(content)
+        column.setContentsMargins(0, 0, 10, 0)
+        column.setSpacing(16)
+
+        hero = QHBoxLayout()
+        words = QVBoxLayout()
+        words.addWidget(label("QUAKE III ARENA  ·  TEAM ARENA  ·  CLASSIC MODS", "eyebrow"))
+        words.addWidget(label("Enter the arena.", "heading"))
+        words.addWidget(
+            label("Install it from your Steam library, play, or host your own server.", "muted")
+        )
+        hero.addLayout(words, stretch=1)
+        hero.addWidget(Emblem())
+        column.addLayout(hero)
+
+        column.addWidget(label("Installation folder", "muted"))
         row = QHBoxLayout()
-        row.addWidget(QLabel("Installation folder:"))
         self.folder = QLineEdit()
+        self.folder.setAccessibleName("Installation folder")
         self.folder.editingFinished.connect(self.refresh)
         browse = QPushButton("Browse…")
         browse.clicked.connect(self._browse)
-        self.open_folder = QPushButton("Open")
+        row.addWidget(self.folder, stretch=1)
+        row.addWidget(browse)
+        column.addLayout(row)
+
+        self.tabs = QTabWidget()
+        self.tabs.setDocumentMode(True)
+        self.tabs.tabBar().setDrawBase(False)  # the pane's own top border is the base line
+        self.tabs.addTab(self._install_tab(), "Install")
+        self.tabs.addTab(self._play_tab(), "Play")
+        self.server_tab = ServerTab(self.install_dir)
+        self.tabs.addTab(self.server_tab, "Server")
+        self.tabs.addTab(self._maps_tab(), "Maps")
+        column.addWidget(self.tabs, stretch=1)
+        return theme.scrollable(content)
+
+    def _activity_panel(self) -> QWidget:
+        side, layout = panel()
+        side.setFixedWidth(300)
+        layout.setContentsMargins(20, 22, 20, 20)
+        layout.setSpacing(12)
+        layout.addWidget(label("ACTIVITY CENTER", "eyebrow"))
+        self.status = label("Ready", "section", wrap=True)
+        layout.addWidget(self.status)
+        self.stage_list = QVBoxLayout()
+        self.stage_list.setSpacing(8)
+        layout.addLayout(self.stage_list)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 1000)
+        self.progress.setTextVisible(False)
+        layout.addWidget(self.progress)
+        self.progress_text = label("Waiting for a task", "muted", wrap=True)
+        layout.addWidget(self.progress_text)
+        self.cancel_button = QPushButton("Cancel installation")
+        self.cancel_button.clicked.connect(self.cancel_install)
+        self.cancel_button.hide()
+        layout.addWidget(self.cancel_button)
+        layout.addSpacing(6)
+        layout.addWidget(label("Activity log", "section"))
+        self.log_view = QPlainTextEdit(readOnly=True)
+        self.log_view.setMaximumBlockCount(5000)
+        layout.addWidget(self.log_view, stretch=1)
+        self.open_folder = QPushButton("Open game folder")
         self.open_folder.clicked.connect(
             lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.install_dir())))
         )
-        row.addWidget(self.folder, stretch=1)
-        row.addWidget(browse)
-        row.addWidget(self.open_folder)
-        return row
+        layout.addWidget(self.open_folder)
+        return side
+
+    @staticmethod
+    def _page() -> tuple[QWidget, QVBoxLayout]:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 16, 0, 0)
+        layout.setSpacing(14)
+        return page, layout
 
     def _install_tab(self) -> QWidget:
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
+        tab, layout = self._page()
 
-        steam = QGroupBox("Quake III Arena from Steam")
-        form = QFormLayout(steam)
+        steam, form = panel("01   Quake III Arena from Steam")
         self.use_steam = QCheckBox("Download or verify the game and fetch the CD keys")
         self.username = QLineEdit()
-        self.username.setPlaceholderText("Steam account name")
-        note = QLabel(STEAM_NOTE)
-        note.setWordWrap(True)
-        note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        form.addRow(self.use_steam)
-        form.addRow("Steam username:", self.username)
-        form.addRow(note)
+        self.username.setPlaceholderText("Your Steam account")
+        self.username.setAccessibleName("Steam username")
         self.use_steam.toggled.connect(self.username.setEnabled)
+        form.addWidget(self.use_steam)
+        form.addWidget(label("Steam username", "muted"))
+        form.addWidget(self.username)
+        form.addWidget(label(STEAM_NOTE, "muted", wrap=True))
         layout.addWidget(steam)
 
-        mods = QGroupBox("Mods installed with the game")
-        mods_layout = QVBoxLayout(mods)
+        mods, mods_layout = panel("02   Mods installed with the game")
         for mod in MODS:
-            label = QLabel(f"• <b>{mod.title}</b> — {mod.description}")
-            label.setWordWrap(True)
-            mods_layout.addWidget(label)
+            entry = QVBoxLayout()
+            entry.setSpacing(2)
+            entry.addWidget(label(mod.title, wrap=True))
+            entry.addWidget(label(mod.description, "muted", wrap=True))
             if mod.notes:
-                notes = QLabel(mod.notes)
-                notes.setWordWrap(True)
-                notes.setIndent(14)
-                notes.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-                mods_layout.addWidget(notes)
+                entry.addWidget(label(mod.notes, "muted", wrap=True))
+            mods_layout.addLayout(entry)
         layout.addWidget(mods)
 
         self.shortcuts = QCheckBox("Create shortcuts for the installed games")
         layout.addWidget(self.shortcuts)
-        layout.addStretch()
-
-        buttons = QHBoxLayout()
-        buttons.addStretch()
         self.install_button = QPushButton("Install")
         self.install_button.setDefault(True)
         self.install_button.clicked.connect(self.start_install)
-        self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.setEnabled(False)
-        self.cancel_button.clicked.connect(self.cancel_install)
-        buttons.addWidget(self.install_button)
-        buttons.addWidget(self.cancel_button)
-        layout.addLayout(buttons)
+        theme.set_primary(self.install_button)
+        layout.addWidget(self.install_button)
+        layout.addStretch()
         return tab
 
     def _maps_tab(self) -> QWidget:
         """The map packs every installation gets; only a list to read."""
-        tab = QWidget()
-        layout = QVBoxLayout(tab)
-        note = QLabel(
-            f"These {len(maps.MAPS)} map packs are installed with the game, into baseq3, so "
-            "every mod can load them. They are downloaded from lvlworld.com, or from "
-            "ArenaHub's own backup copy when that fails."
+        tab, layout = self._page()
+        box, box_layout = panel(f"{len(maps.MAPS)} map packs come with the game")
+        box_layout.addWidget(
+            label(
+                "Installed into baseq3, so every mod can load them. They are downloaded from "
+                "lvlworld.com, or from ArenaHub's own backup copy when that fails.",
+                "muted",
+                wrap=True,
+            )
         )
-        note.setWordWrap(True)
-        note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        layout.addWidget(note)
 
         self.maps_list = QTreeWidget()
         self.maps_list.setHeaderLabels(["Title", "Author", "Maps", "Modes"])
@@ -176,6 +245,7 @@ class MainWindow(QMainWindow):
         self.maps_list.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
         self.maps_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.maps_list.setIconSize(QSize(*maps.THUMBNAIL_SIZE))
+        self.maps_list.setMinimumHeight(420)
         for pack in maps.MAPS:
             names = ", ".join(pack.maps)
             if len(pack.maps) > 3:
@@ -194,26 +264,34 @@ class MainWindow(QMainWindow):
         self.maps_list.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         for column in range(self.maps_list.columnCount() - 1):
             self.maps_list.resizeColumnToContents(column)
-        layout.addWidget(self.maps_list)
+        box_layout.addWidget(self.maps_list, stretch=1)
+        layout.addWidget(box, stretch=1)
         return tab
 
     def _play_tab(self) -> QWidget:
-        tab = QWidget()
-        layout = QHBoxLayout(tab)
+        tab, page = self._page()
+        layout = QHBoxLayout()
+        layout.setSpacing(14)
+        page.addLayout(layout)
+        page.addStretch()
 
-        left = QVBoxLayout()
-        left.addWidget(QLabel("Installed games:"))
+        games, left = panel("Installed games")
         self.games = QListWidget()
+        self.games.setMinimumHeight(180)
         self.games.itemDoubleClicked.connect(lambda _item: self.play())
         left.addWidget(self.games)
-        self.play_button = QPushButton("Play")
+        self.play_button = QPushButton("▶  Play")
         self.play_button.clicked.connect(self.play)
+        theme.set_primary(self.play_button)
         left.addWidget(self.play_button)
-        layout.addLayout(left, stretch=1)
+        layout.addWidget(games, stretch=1)
 
         right = QVBoxLayout()
-        player = QGroupBox("Player")
-        form = QFormLayout(player)
+        right.setSpacing(14)
+        player, player_layout = panel("Player")
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(6)
         self.player_name = QLineEdit()
         self.player_name.setMaxLength(configs.MAX_NAME_LENGTH)
         self.player_name.setPlaceholderText("Your name in game")
@@ -229,25 +307,29 @@ class MainWindow(QMainWindow):
         self.renderer = QComboBox()
         self.renderer.addItem("OpenGL", Renderer.OPENGL.value)
         self.renderer.addItem("Vulkan", Renderer.VULKAN.value)
-        form.addRow("Name:", self.player_name)
-        form.addRow("Mouse sensitivity:", self.sensitivity)
-        form.addRow("Renderer:", self.renderer)
-        note = QLabel("Saved to the game's player.cfg files as you change them.")
-        note.setWordWrap(True)
-        note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        form.addRow(note)
+        grid.addWidget(label("Name", "muted"), 0, 0, 1, 2)
+        grid.addWidget(self.player_name, 1, 0, 1, 2)
+        grid.addWidget(label("Mouse sensitivity", "muted"), 2, 0)
+        grid.addWidget(label("Renderer", "muted"), 2, 1)
+        grid.addWidget(self.sensitivity, 3, 0)
+        grid.addWidget(self.renderer, 3, 1)
+        player_layout.addLayout(grid)
+        player_layout.addWidget(
+            label("Saved to the game's player.cfg files as you change them.", "muted", wrap=True)
+        )
         right.addWidget(player)
 
         # Only shown when an installed game has no q3key (see refresh).
-        self.keys_group = QGroupBox("CD keys")
-        keys_form = self.keys_form = QFormLayout(self.keys_group)
-        keys_note = QLabel(
-            "Steam did not provide these keys. Copy them from the Steam client "
-            "(Manage → CD Keys) and save them here."
+        self.keys_group, keys_layout = panel("CD keys")
+        keys_form = self.keys_form = QFormLayout()
+        keys_form.addRow(
+            label(
+                "Steam did not provide these keys. Copy them from the Steam client "
+                "(Manage → CD Keys) and save them here.",
+                "muted",
+                wrap=True,
+            )
         )
-        keys_note.setWordWrap(True)
-        keys_note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
-        keys_form.addRow(keys_note)
         self.quake3_key = QLineEdit()
         self.team_arena_key = QLineEdit()
         for field in (self.quake3_key, self.team_arena_key):
@@ -258,6 +340,7 @@ class MainWindow(QMainWindow):
         keys_form.addRow(f"{QUAKE3.title}:", self.quake3_key)
         keys_form.addRow(f"{TEAM_ARENA.title}:", self.team_arena_key)
         keys_form.addRow(save_keys)
+        keys_layout.addLayout(keys_form)
         right.addWidget(self.keys_group)
         right.addStretch()
         layout.addLayout(right, stretch=1)
@@ -371,6 +454,7 @@ class MainWindow(QMainWindow):
 
         self._save_settings()
         self.log_view.clear()
+        self._clear_stages()
         self.worker = InstallWorker(options)
         self.thread = QThread(self)
         self.worker.moveToThread(self.thread)
@@ -381,7 +465,7 @@ class MainWindow(QMainWindow):
         self.worker.prompt.connect(self._on_prompt)
         self.worker.succeeded.connect(self._on_succeeded)
         self.worker.failed.connect(self._on_failed)
-        self.worker.cancelled.connect(lambda: self._set_status("Installation cancelled"))
+        self.worker.cancelled.connect(self._on_cancelled)
         self.worker.finished.connect(self._on_finished)
         self._set_busy(True)
         self.thread.start()
@@ -397,6 +481,7 @@ class MainWindow(QMainWindow):
         serving = self.server_tab.running
         self.install_button.setEnabled(not busy and not serving)
         self.cancel_button.setEnabled(busy)
+        self.cancel_button.setVisible(busy)
         self.play_button.setEnabled(not busy)
         self.folder.setEnabled(not busy and not serving)
         self.server_tab.set_enabled_for_install(busy)
@@ -404,21 +489,50 @@ class MainWindow(QMainWindow):
     def _set_status(self, text: str) -> None:
         self.status.setText(text)
 
-    def _on_stage(self, title: str) -> None:
-        self._set_status(title)
-        self.log_view.appendPlainText(f"== {title}")
+    def _clear_stages(self) -> None:
+        for item in self._stages:
+            item.deleteLater()
+        self._stages.clear()
         self.progress.setRange(0, 1000)
         self.progress.setValue(0)
+        self.progress_text.setText("Waiting for a task")
+
+    def _mark_stage(self, item: QLabel, mark: str, color: str) -> None:
+        item.setText(f"{mark}   {item.text()[4:]}")
+        item.setStyleSheet(f"color: {COLORS[color]};")
+
+    def _on_stage(self, title: str) -> None:
+        """List the installation steps: done ones ticked, the current one highlighted."""
+        self._set_status(title)
+        self.log_view.appendPlainText(f"== {title}")
+        if self._stages:
+            self._mark_stage(self._stages[-1], "✓", "OK")
+        item = label(f"●   {title}", wrap=True)
+        item.setStyleSheet(f"color: {COLORS['GOLD']};")
+        self._stages.append(item)
+        self.stage_list.addWidget(item)
+        while len(self._stages) > MAX_STAGES:
+            self._stages.pop(0).deleteLater()
+        self.progress.setRange(0, 1000)
+        self.progress.setValue(0)
+        self.progress_text.setText("Working…")
 
     def _on_progress(self, fraction: float, detail: str) -> None:
         if fraction < 0:
             self.progress.setRange(0, 0)  # busy indicator
+            text = detail
         else:
             self.progress.setRange(0, 1000)
             self.progress.setValue(int(fraction * 1000))
-        if detail:
-            self.progress.setFormat(detail)
-            self.progress.setTextVisible(True)
+            text = f"{detail}  ·  {fraction:.0%}" if detail else f"{fraction:.0%}"
+        if text:
+            self.progress_text.setText(text)
+
+    def _on_cancelled(self) -> None:
+        self._set_status("Installation cancelled")
+        if self._stages:
+            self._mark_stage(self._stages[-1], "○", "MUTED")
+        self.progress_text.setText("You can start again whenever you like.")
 
     def _on_prompt(self, prompt: Prompt) -> None:
         message = prompt.message
@@ -433,6 +547,9 @@ class MainWindow(QMainWindow):
 
     def _on_succeeded(self, report: InstallReport) -> None:
         self._set_status("Installation complete")
+        for item in self._stages:
+            self._mark_stage(item, "✓", "OK")
+        self.progress_text.setText("Your next match awaits.")
         lines = ["Installation complete."]
         if report.keys:
             lines.append("CD keys written for: " + ", ".join(sorted(report.keys)))
@@ -442,6 +559,9 @@ class MainWindow(QMainWindow):
 
     def _on_failed(self, message: str) -> None:
         self._set_status("Installation failed")
+        if self._stages:
+            self._mark_stage(self._stages[-1], "✕", "ERROR")
+        self.progress_text.setText("See the activity log, then try again.")
         self.log_view.appendPlainText(f"Error: {message}")
         QMessageBox.critical(self, "ArenaHub", message)
 
@@ -452,7 +572,7 @@ class MainWindow(QMainWindow):
         self.worker.deleteLater()
         self.thread = self.worker = None
         self.progress.setRange(0, 1000)
-        self.progress.setTextVisible(False)
+        self.progress.setValue(1000 if self.status.text() == "Installation complete" else 0)
         self._set_busy(False)
         self.refresh()
 

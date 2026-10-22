@@ -8,15 +8,13 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QProcess, QProcessEnvironment, QSettings, QTimer, Signal
-from PySide6.QtGui import QPalette, QValidator
+from PySide6.QtGui import QValidator
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
     QComboBox,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QListWidget,
     QMessageBox,
@@ -28,6 +26,8 @@ from PySide6.QtWidgets import (
 
 from ..core import paths, server
 from ..core.server import ServerGame, ServerOptions
+from . import theme
+from .theme import label, panel
 
 BOT_SKILLS = ("I Can Win", "Bring It On", "Hurt Me Plenty", "Hardcore", "Nightmare!")
 LIMIT_LABELS = {
@@ -79,14 +79,15 @@ class ServerTab(QWidget):
         self._loading = False
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 16, 0, 0)
+        layout.setSpacing(14)
         columns = QHBoxLayout()
+        columns.setSpacing(14)
         columns.addWidget(self._settings_group(), stretch=1)
         columns.addWidget(self._rotation_group(), stretch=1)
         layout.addLayout(columns, stretch=1)
 
-        self.note = QLabel()
-        self.note.setWordWrap(True)
-        self.note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+        self.note = label(kind="muted", wrap=True)
         layout.addWidget(self.note)
         layout.addLayout(self._control_row())
 
@@ -95,9 +96,12 @@ class ServerTab(QWidget):
 
     # Layout -------------------------------------------------------------------
 
-    def _settings_group(self) -> QGroupBox:
-        group = QGroupBox("Settings")
-        form = self.form = QFormLayout(group)
+    def _settings_group(self) -> QWidget:
+        group, group_layout = panel("Settings")
+        form = self.form = QFormLayout()
+        form.setVerticalSpacing(8)
+        group_layout.addLayout(form)
+        group_layout.addStretch()
 
         self.game = QComboBox()
         self.game.currentIndexChanged.connect(self._game_changed)
@@ -152,9 +156,8 @@ class ServerTab(QWidget):
         box.setSpecialValueText("None")
         return box
 
-    def _rotation_group(self) -> QGroupBox:
-        group = QGroupBox("Map rotation")
-        layout = QVBoxLayout(group)
+    def _rotation_group(self) -> QWidget:
+        group, layout = panel("Map rotation")
 
         self.map_filter = QLineEdit()
         self.map_filter.setPlaceholderText("Filter maps")
@@ -174,14 +177,15 @@ class ServerTab(QWidget):
         buttons = QVBoxLayout()
         buttons.addStretch()
         self.rotation_buttons = []
-        for text, tip, slot in (
-            ("→", "Add the selected maps to the rotation", self._add_maps),
-            ("←", "Remove the selected maps from the rotation", self._remove_maps),
-            ("↑", "Play the selected maps earlier", lambda: self._move_maps(-1)),
-            ("↓", "Play the selected maps later", lambda: self._move_maps(1)),
+        for icon, tip, slot in (
+            ("right", "Add the selected maps to the rotation", self._add_maps),
+            ("left", "Remove the selected maps from the rotation", self._remove_maps),
+            ("up", "Play the selected maps earlier", lambda: self._move_maps(-1)),
+            ("down", "Play the selected maps later", lambda: self._move_maps(1)),
         ):
-            button = QPushButton(text)
+            button = QPushButton(theme.icon(f"arrow-{icon}"), "")
             button.setToolTip(tip)
+            button.setAccessibleName(tip)
             button.setFixedWidth(36)
             button.clicked.connect(slot)
             buttons.addWidget(button)
@@ -189,10 +193,10 @@ class ServerTab(QWidget):
         buttons.addStretch()
 
         left = QVBoxLayout()
-        left.addWidget(QLabel("Installed maps:"))
+        left.addWidget(label("Installed maps", "muted"))
         left.addWidget(self.available)
         right = QVBoxLayout()
-        right.addWidget(QLabel("Rotation, in order:"))
+        right.addWidget(label("Rotation, in order", "muted"))
         right.addWidget(self.rotation)
         shuffle = QPushButton("Shuffle")
         shuffle.setToolTip("Put the rotation in a random order")
@@ -214,6 +218,7 @@ class ServerTab(QWidget):
         self.send_button.clicked.connect(self.send_command)
         self.start_button = QPushButton("Start server")
         self.start_button.clicked.connect(self.start)
+        theme.set_primary(self.start_button)
         self.join_button = QPushButton("Join")
         self.join_button.setToolTip("Play on this server")
         self.join_button.clicked.connect(self._join)

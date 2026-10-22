@@ -352,3 +352,34 @@ def test_bot_skill_range_follows_the_mod(window, tmp_path):
     assert tab.bot_skill.text() == "100 (max 100)"
     tab.game.setCurrentIndex(tab.game.findData("baseq3"))
     assert tab.bot_skill.value() == 5
+
+
+def test_theme_style_sheet_is_complete():
+    import re
+    from pathlib import Path
+
+    from arenahub.gui import theme
+
+    style = theme.stylesheet()
+    assert not re.search(r"@[A-Z]", style)  # every colour and image was filled in
+    for path in re.findall(r"url\(([^)]+)\)", style):
+        assert Path(path).is_file(), path
+
+
+def test_activity_panel_follows_the_installation(window, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+
+    assert window.cancel_button.isHidden()
+    window._on_stage("Logging in to Steam")
+    window._on_stage("Installing Quake3e")
+    assert [item.text() for item in window._stages] == [
+        "✓   Logging in to Steam",
+        "●   Installing Quake3e",
+    ]
+    window._on_progress(0.5, "quake3e.zip")
+    assert window.progress_text.text() == "quake3e.zip  ·  50%"
+
+    monkeypatch.setattr(QMessageBox, "critical", lambda *args: None)
+    window._on_failed("network down")
+    assert window._stages[-1].text() == "✕   Installing Quake3e"
+    assert window.status.text() == "Installation failed"

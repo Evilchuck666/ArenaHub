@@ -66,6 +66,13 @@ either one.
 
 ## How it works
 
+The window follows the layout of
+[QuakeBundle](https://github.com/Evilchuck666/QuakeBundle) in Quake III
+Arena's colours: blood red for the main actions and ember gold for highlights.
+The **Install**, **Play**, **Server** and **Maps** tabs are on the left. The
+**Activity Center** on the right shows the installation steps, the progress,
+the activity log and a button to open the game folder.
+
 1. Choose an installation folder, enter your Steam username and press
    **Install**. All the mods in the table above are always installed.
 2. ArenaHub asks for your Steam password and, if your account uses Steam Guard,
@@ -170,13 +177,13 @@ As in any Quake III server, the next map loads when the intermission ends. In
 Quake III Arena and Team Arena that takes a human player pressing fire
 (ready); bots alone never end it. OSP and CPMA move on by themselves.
 
-The server's console output goes to the log at the bottom of the window. You
+The server's console output goes to the activity log on the right. You
 can type server commands such as `status`, `map q3dm17` or `kick <name>`.
 **Join** starts the game connected to your server. **Stop server** sends
 `quit`, and the server is closed if it does not stop. Installing and changing
 the folder are disabled while the server runs, and closing ArenaHub stops it.
 On Windows the server shows its console in its own window, so its output does
-not reach the log and the command field is hidden. For players on the
+not reach the activity log and the command field is hidden. For players on the
 Internet, forward the UDP port to your computer in your router.
 
 ### Your Steam account
@@ -223,9 +230,9 @@ src/arenahub/
   steam_helper.py  Steam client process: login, CD keys, downloads (steam-next + gevent)
   steam_depots.py  depot download from Steam's content servers (runs in the helper)
   core/            installation logic, no Qt: catalog, downloads, Steam, keys, launcher
-  gui/             Qt window and background worker
+  gui/             Qt window, theme and background worker
 tests/             pytest suite; no network or Steam account needed
-assets/icons/      application icon (regenerate with scripts/make_icons.py)
+assets/icons/      application icon (regenerate with scripts/make_icons.py), header emblem, ui/ theme icons
 assets/links/      .desktop templates for the GNU/Linux shortcuts
 assets/cfg/        game configs copied into each game folder
 assets/maps/       backup copy of the map packs (downloaded, not bundled)

@@ -43,3 +43,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "BLE", "PLW"]
+
+[tool.ruff.lint.per-file-ignores]
+# Qt style sheet rules read best one per line.
+"src/arenahub/gui/theme.py" = ["E501"]
