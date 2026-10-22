@@ -8,7 +8,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QProcess, QProcessEnvironment, QSettings, QTimer, Signal
-from PySide6.QtGui import QPalette
+from PySide6.QtGui import QPalette, QValidator
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -38,6 +38,24 @@ LIMIT_LABELS = {
 COLOR_CODE = re.compile(r"\^[0-9A-Za-z]")
 STOP_TIMEOUT = 3000  # ms to wait for "quit" before terminating, and again before killing
 WINDOWS_CONSOLE_NOTE = "On Windows the server shows its console in its own window."
+
+
+class SkillSpinBox(QSpinBox):
+    """Bot skill: Quake III's names for 1 to 5, plain numbers above (CPMA goes up to 100)."""
+
+    def textFromValue(self, value: int) -> str:
+        if self.maximum() <= len(BOT_SKILLS) and 1 <= value <= len(BOT_SKILLS):
+            return f"{value} - {BOT_SKILLS[value - 1]}"
+        return str(value)
+
+    def valueFromText(self, text: str) -> int:
+        number = re.match(r"\s*(\d+)", text)
+        return int(number[1]) if number else self.value()
+
+    def validate(self, text: str, pos: int) -> object:
+        if re.match(r"\s*\d+", text):
+            return QValidator.State.Acceptable, text, pos
+        return QValidator.State.Intermediate, text, pos
 
 
 class ServerTab(QWidget):
@@ -98,9 +116,7 @@ class ServerTab(QWidget):
         self.bots = QSpinBox()
         self.bots.setRange(0, 64)
         self.bots.setSpecialValueText("None")
-        self.bot_skill = QComboBox()
-        for index, name in enumerate(BOT_SKILLS, 1):
-            self.bot_skill.addItem(f"{index} - {name}", index)
+        self.bot_skill = SkillSpinBox()
         self.password = QLineEdit()
         self.password.setMaxLength(server.MAX_TEXT)
         self.password.setPlaceholderText("None: anyone can join")
@@ -225,8 +241,6 @@ class ServerTab(QWidget):
         for name, box in self.limits.items():
             box.setValue(int(s.value(f"server/{name}", getattr(defaults, name))))
         self.bots.setValue(int(s.value("server/bots", defaults.bots)))
-        index = self.bot_skill.findData(int(s.value("server/bot_skill", defaults.bot_skill)))
-        self.bot_skill.setCurrentIndex(max(index, 0))
         self.password.setText(s.value("server/password", ""))
         self.rcon_password.setText(s.value("server/rcon_password", ""))
         self.public.setChecked(s.value("server/public", "false") == "true")
@@ -241,7 +255,7 @@ class ServerTab(QWidget):
         for name, box in self.limits.items():
             s.setValue(f"server/{name}", box.value())
         s.setValue("server/bots", self.bots.value())
-        s.setValue("server/bot_skill", self.bot_skill.currentData())
+        s.remove("server/bot_skill")  # one value for every mod, in earlier versions
         s.setValue("server/password", self.password.text())
         s.setValue("server/rcon_password", self.rcon_password.text())
         s.setValue("server/public", "true" if self.public.isChecked() else "false")
@@ -251,10 +265,14 @@ class ServerTab(QWidget):
             self._save_game_choices(entry)
 
     def _save_game_choices(self, entry: ServerGame) -> None:
-        """Game type and rotation are remembered per mod: each has its own maps."""
+        """Game type, rotation and bot skill are remembered per mod.
+
+        Each mod has its own maps, and CPMA's bot skills go far beyond Quake III's.
+        """
         if self.gametype.currentData():
             self.settings.setValue(f"server/gametype/{entry.game.id}", self.gametype.currentData())
         self.settings.setValue(f"server/maps/{entry.game.id}", self.rotation_maps())
+        self.settings.setValue(f"server/bot_skill/{entry.game.id}", self.bot_skill.value())
 
     def _saved_maps(self, game_id: str) -> list[str]:
         value = self.settings.value(f"server/maps/{game_id}", [])
@@ -310,6 +328,15 @@ class ServerTab(QWidget):
             self.rotation.addItems(list(dict.fromkeys(self._saved_maps(entry.game.id))))
         self._fill_available()
         self.form.setRowVisible(self.physics, bool(entry) and entry.game.id == "cpma")
+        if entry:
+            skill = self.settings.value(
+                f"server/bot_skill/{entry.game.id}", entry.default_bot_skill
+            )
+            self.bot_skill.setRange(1, entry.max_bot_skill)
+            self.bot_skill.setSuffix(
+                f" (max {entry.max_bot_skill})" if entry.max_bot_skill > 5 else ""
+            )
+            self.bot_skill.setValue(int(skill))
         self._gametype_changed()
         self._set_running(self.running)
 
@@ -399,7 +426,7 @@ class ServerTab(QWidget):
             rcon_password=self.rcon_password.text(),
             public=self.public.isChecked(),
             bots=self.bots.value(),
-            bot_skill=self.bot_skill.currentData(),
+            bot_skill=self.bot_skill.value(),
             physics=self.physics.currentText(),
         )
 

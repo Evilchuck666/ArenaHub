@@ -60,6 +60,9 @@ class ServerGame:
     gametypes: tuple[GameType, ...]
     notes: str = ""
     roundlimit_cvar: str = "roundlimit"
+    max_bot_skill: int = 5
+    """Quake III's bots go from 1 (I Can Win) to 5 (Nightmare!)."""
+    default_bot_skill: int = 3
 
 
 SERVER_GAMES: tuple[ServerGame, ...] = (
@@ -90,6 +93,9 @@ SERVER_GAMES: tuple[ServerGame, ...] = (
             GameType("ntf", "NTF (classes)", 8, "capturelimit"),
         ),
         notes="CPMA does not rotate maps in 1v1: players change them by vote.",
+        # CPMA's bots accept skills up to 100 (higher values are clamped to it).
+        max_bot_skill=100,
+        default_bot_skill=100,
     ),
     ServerGame(
         OSP,
@@ -198,6 +204,8 @@ def validate(options: ServerOptions) -> None:
         raise ValueError("Max players must be between 1 and 64.")
     if options.bots > options.max_clients:
         raise ValueError("There cannot be more bots than player slots.")
+    if not 1 <= options.bot_skill <= options.entry.max_bot_skill:
+        raise ValueError(f"Bot skill must be between 1 and {options.entry.max_bot_skill}.")
     if options.physics not in CPMA_PHYSICS:
         raise ValueError(f"Unknown CPMA physics: {options.physics}")
 

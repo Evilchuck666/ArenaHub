@@ -331,3 +331,24 @@ def test_shuffle_keeps_every_map(window, tmp_path, monkeypatch):
     monkeypatch.setattr(random, "shuffle", lambda maps: maps.reverse())
     tab._shuffle_maps()
     assert tab.rotation_maps() == ["d", "c", "b", "a"]
+
+
+def test_bot_skill_range_follows_the_mod(window, tmp_path):
+    folder = server_folder(tmp_path)
+    (folder / "cpma").mkdir()
+    (folder / "cpma" / "z-cpma-pak153.pk3").write_text("")
+    window.folder.setText(str(folder))
+    window.refresh()
+    tab = window.server_tab
+
+    tab.game.setCurrentIndex(tab.game.findData("baseq3"))
+    assert (tab.bot_skill.maximum(), tab.bot_skill.value()) == (5, 3)
+    assert tab.bot_skill.text() == "3 - Hurt Me Plenty"
+    tab.bot_skill.setValue(5)
+
+    # CPMA starts at its maximum, and each mod keeps its own value.
+    tab.game.setCurrentIndex(tab.game.findData("cpma"))
+    assert (tab.bot_skill.maximum(), tab.bot_skill.value()) == (100, 100)
+    assert tab.bot_skill.text() == "100 (max 100)"
+    tab.game.setCurrentIndex(tab.game.findData("baseq3"))
+    assert tab.bot_skill.value() == 5

@@ -116,6 +116,7 @@ def test_cpma_gets_a_mode_and_map_lists(tmp_path):
         ({"password": "x" * 65}, "at most"),
         ({"port": 80}, "port"),
         ({"bots": 20, "max_clients": 8}, "more bots"),
+        ({"bot_skill": 6}, "between 1 and 5"),
     ],
 )
 def test_validation(changes, message):
@@ -177,3 +178,12 @@ def test_launcher_can_join_a_server(tmp_path, monkeypatch):
     (tmp_path / "quake3e.x64").write_text("")
     argv = launcher.command(tmp_path, QUAKE3, engine.Renderer.OPENGL, connect="127.0.0.1:27960")
     assert argv[-2:] == ["+connect", "127.0.0.1:27960"]
+
+
+def test_cpma_bots_go_up_to_skill_100():
+    cpma = server.server_game("cpma")
+    assert (cpma.max_bot_skill, cpma.default_bot_skill) == (100, 100)
+    text = server.config_text(options("cpma", "ffa", bots=2, bot_skill=100))
+    assert "set g_spSkill 100" in text.splitlines()
+    with pytest.raises(ValueError, match="between 1 and 100"):
+        server.validate(options("cpma", "ffa", bot_skill=101))
