@@ -54,12 +54,14 @@ class GameType:
     """g_gametype, or the "type" of a CPMA mode."""
     limit: str = "fraglimit"
     """Which score ends the match: fraglimit, capturelimit or roundlimit."""
+    teams: bool = False
+    """Played red against blue, so bots are split between the teams."""
 
 
 FFA = GameType("ffa", "Free For All", 0)
 TOURNEY = GameType("tourney", "Tournament (1v1)", 1)
-TDM = GameType("tdm", "Team Deathmatch", 3)
-CTF = GameType("ctf", "Capture The Flag", 4, "capturelimit")
+TDM = GameType("tdm", "Team Deathmatch", 3, teams=True)
+CTF = GameType("ctf", "Capture The Flag", 4, "capturelimit", teams=True)
 
 
 @dataclass(frozen=True)
@@ -82,9 +84,9 @@ SERVER_GAMES: tuple[ServerGame, ...] = (
             TOURNEY,
             TDM,
             CTF,
-            GameType("oneflag", "One Flag CTF", 5, "capturelimit"),
-            GameType("overload", "Overload", 6, "capturelimit"),
-            GameType("harvester", "Harvester", 7, "capturelimit"),
+            GameType("oneflag", "One Flag CTF", 5, "capturelimit", teams=True),
+            GameType("overload", "Overload", 6, "capturelimit", teams=True),
+            GameType("harvester", "Harvester", 7, "capturelimit", teams=True),
         ),
     ),
     ServerGame(
@@ -92,13 +94,13 @@ SERVER_GAMES: tuple[ServerGame, ...] = (
         (
             FFA,
             GameType("1v1", "1v1", 1),
-            GameType("2v2", "2v2", 9),
+            GameType("2v2", "2v2", 9, teams=True),
             TDM,
             CTF,
-            GameType("ca", "Clan Arena", 5, "roundlimit"),
-            GameType("ft", "Freeze Tag", 6, "roundlimit"),
-            GameType("ctfs", "Capture Strike", 7, "roundlimit"),
-            GameType("ntf", "NTF (classes)", 8, "capturelimit"),
+            GameType("ca", "Clan Arena", 5, "roundlimit", teams=True),
+            GameType("ft", "Freeze Tag", 6, "roundlimit", teams=True),
+            GameType("ctfs", "Capture Strike", 7, "roundlimit", teams=True),
+            GameType("ntf", "NTF (classes)", 8, "capturelimit", teams=True),
         ),
         notes="CPMA does not rotate maps in 1v1: players change them by vote.",
         # CPMA's bots accept skills up to 100 (higher values are clamped to it).
@@ -107,7 +109,13 @@ SERVER_GAMES: tuple[ServerGame, ...] = (
     ),
     ServerGame(
         OSP,
-        (FFA, GameType("1v1", "1v1", 1), TDM, CTF, GameType("ca", "Clan Arena", 5, "roundlimit")),
+        (
+            FFA,
+            GameType("1v1", "1v1", 1),
+            TDM,
+            CTF,
+            GameType("ca", "Clan Arena", 5, "roundlimit", teams=True),
+        ),
     ),
     ServerGame(
         THREEWAVE,
@@ -115,11 +123,11 @@ SERVER_GAMES: tuple[ServerGame, ...] = (
             FFA,
             TOURNEY,
             TDM,
-            GameType("ctf", "Threewave CTF", 4, "capturelimit"),
-            GameType("oneflag", "One Flag CTF", 5, "capturelimit"),
-            GameType("ctfs", "Capture Strike", 9, "capturelimit"),
-            GameType("cctf", "Classic CTF", 10, "capturelimit"),
-            GameType("arena", "Threewave Arena", 11, "roundlimit"),
+            GameType("ctf", "Threewave CTF", 4, "capturelimit", teams=True),
+            GameType("oneflag", "One Flag CTF", 5, "capturelimit", teams=True),
+            GameType("ctfs", "Capture Strike", 9, "capturelimit", teams=True),
+            GameType("cctf", "Classic CTF", 10, "capturelimit", teams=True),
+            GameType("arena", "Threewave Arena", 11, "roundlimit", teams=True),
         ),
         roundlimit_cvar="g_roundlimit",
     ),
@@ -272,8 +280,14 @@ def config_text(options: ServerOptions) -> str:
             )
         lines.append("vstr arenahub_map0")
     # Run once the first map is loaded; bots stay connected across map changes.
+    # In team modes each bot gets its team: the game would put them all in one,
+    # because none has joined a team yet when the next one is added. Red gets the
+    # odd one, so the first person to join (sent to the smaller team) evens them.
     for index in range(options.bots):
-        lines.append(f"addbot {BOT_NAMES[index % len(BOT_NAMES)]} {options.bot_skill}")
+        bot = f"addbot {BOT_NAMES[index % len(BOT_NAMES)]} {options.bot_skill}"
+        if kind.teams:
+            bot += " red" if index % 2 == 0 else " blue"
+        lines.append(bot)
     return "\n".join(lines) + "\n"
 
 

@@ -202,3 +202,23 @@ def test_bots_are_added_after_the_first_map():
 
     cpma = server.config_text(options("cpma", "1v1", ["cpm22"], bots=1, bot_skill=100))
     assert cpma.splitlines()[-2:] == ["map cpm22", "addbot sarge 100"]
+
+
+def test_team_modes_split_the_bots():
+    lines = server.config_text(options(gametype_id="ctf", maps=["q3ctf1"], bots=5)).splitlines()
+    added = [line for line in lines if line.startswith("addbot ")]
+    # Red gets the odd bot; the first person to join goes to blue and evens them.
+    assert [line.split()[-1] for line in added] == ["red", "blue", "red", "blue", "red"]
+
+    solo = server.config_text(options(bots=2)).splitlines()
+    assert [line for line in solo if line.startswith("addbot ")] == [
+        "addbot sarge 3",
+        "addbot visor 3",
+    ]
+
+
+def test_team_flags():
+    solo = {"ffa", "tourney", "1v1"}
+    for entry in server.SERVER_GAMES:
+        for kind in entry.gametypes:
+            assert kind.teams == (kind.id not in solo), (entry.game.id, kind.id)
