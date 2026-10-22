@@ -5,7 +5,8 @@
 ArenaHub is a desktop installer and launcher for Quake III Arena on GNU/Linux,
 Windows and macOS. It downloads your own Steam copy of the game, writes your CD
 keys, installs the [Quake3e](https://github.com/ec-/Quake3e) engine and adds
-four classic mods. Then you play from the same window.
+four classic mods and a collection of community maps. Then you play from the
+same window.
 
 ## What it installs
 
@@ -24,10 +25,34 @@ the archives (old engines, server tools) are not installed.
 Rocket Arena 3 only ships its server code as 32-bit native libraries. With
 Quake3e you can join Rocket Arena servers, but you cannot host local matches.
 
+### Maps
+
+ArenaHub also adds 47 community map packs (about 360 MB) to `baseq3`, so every
+mod can load them. The **Maps** tab lists them with their authors and map
+names. They are defined in `src/arenahub/core/maps.py`, each one pinned to a
+SHA-256 checksum:
+
+- 44 come from [lvlworld.com](https://lvlworld.com). Its downloads need a
+  short-lived token, which ArenaHub requests the same way the site's download
+  page does. It then takes the `.pk3` out of the release archive.
+- The original *OverWhelming Hostility* (`auh3dm1`) and the Dreamcast map pack
+  (`dc-mappack`) are not on lvlworld in this exact version, and neither is
+  [High Quality Quake](https://www.moddb.com/mods/high-quality-quake) 3.7, a
+  graphics pack. They come from the backup copy only.
+- `assets/maps/` holds a backup copy of every pack. ArenaHub downloads it from
+  this repository's `main` branch when lvlworld fails or serves another version.
+  These files are not bundled into the executable.
+
+A map pack that cannot be downloaded is reported as a warning at the end of the
+installation. It does not stop the installation.
+
+The `map_cpm*` packs come with the CPMA map pack, and `q3wpak0-4` and
+`derean01` come with Threewave CTF.
+
 ## What you need
 
 - A **Steam account that owns Quake III Arena**. Team Arena is optional.
-- An Internet connection and about 2 GB of free space.
+- An Internet connection and about 3 GB of free space.
 - **GNU/Linux:** SDL2 for Quake3e (Arch/Artix: `sdl2`; Debian/Ubuntu:
   `libsdl2-2.0-0`). Qt needs `libxkbcommon` and `libxkbcommon-x11`.
 
@@ -48,7 +73,9 @@ either one.
    SHA-1, and files that already match are not downloaded again, so **Update**
    only verifies the game. Existing `.cfg` files are never replaced.
 5. It writes the keys to `baseq3/q3key` and `missionpack/q3key`, installs
-   Quake3e, extracts the mods and adds the game configs (see below).
+   Quake3e, extracts the mods, adds the maps and writes the game configs (see
+   below). Map packs that are already in place and intact are not downloaded
+   again.
 6. In the **Play** tab, pick a game and press **Play**, with the OpenGL or
    Vulkan renderer.
 
@@ -145,6 +172,7 @@ tests/             pytest suite; no network or Steam account needed
 assets/icons/      application icon (regenerate with scripts/make_icons.py)
 assets/links/      .desktop templates for the GNU/Linux shortcuts
 assets/cfg/        game configs copied into each game folder
+assets/maps/       backup copy of the map packs (downloaded, not bundled)
 ```
 
 The Steam helper runs as a separate process, which is the same executable
@@ -191,5 +219,6 @@ SmartScreen will warn on first launch.
 Built with Qt6 / PySide6, [steam-next](https://github.com/fabieu/steam-next),
 zstandard and Quake3e. The CD key request and the depot chunk formats follow
 [SteamKit2](https://github.com/SteamRE/SteamKit). Quake III Arena is a trademark of
-id Software. The mods belong to their respective authors. ArenaHub is not
+id Software. The mods and maps belong to their respective authors; most maps
+are downloaded from [lvlworld.com](https://lvlworld.com). ArenaHub is not
 affiliated with id Software, Bethesda or Valve.

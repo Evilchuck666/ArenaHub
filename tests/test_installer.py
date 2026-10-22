@@ -2,7 +2,7 @@ import shutil
 
 import pytest
 
-from arenahub.core import engine, installer, net, q3key, steam
+from arenahub.core import engine, installer, maps, net, q3key, steam
 from arenahub.core.catalog import QUAKE3_APP_ID, TEAM_ARENA_APP_ID
 from arenahub.core.context import TaskError
 from arenahub.steam_depots import PART_SUFFIX
@@ -54,6 +54,7 @@ def offline(tmp_path, monkeypatch):
     monkeypatch.setattr(net, "fetch", fetch)
     monkeypatch.setattr(engine, "install", install_engine)
     monkeypatch.setattr(steam, "run", run)
+    monkeypatch.setattr(maps, "MAPS", ())  # covered by test_maps
     return calls
 
 
@@ -169,3 +170,20 @@ def test_install_writes_game_configs(tmp_path, offline):
     assert configs.read_player(folder) == player
     text = (folder / "cpma" / "player.cfg").read_text()
     assert configs.read_value(text, "sensitivity") == "2.5"
+
+
+def test_install_adds_the_maps(tmp_path, offline, monkeypatch):
+    installed = []
+
+    def install(ctx, folder, downloads):
+        installed.append(folder)
+        return maps.InstallResult(failed=["Beatbox (ztn3dm2.pk3): 404"])
+
+    monkeypatch.setattr(maps, "install", install)
+    folder = tmp_path / "q3"
+    ctx = RecordingContext()
+    report = installer.install(ctx, installer.InstallOptions(folder, "me", "secret"))
+    assert installed == [folder.resolve()]
+    assert "Installing maps" in ctx.stages
+    # A missing map does not fail the installation.
+    assert report.warnings == ["Map not installed: Beatbox (ztn3dm2.pk3): 404"]

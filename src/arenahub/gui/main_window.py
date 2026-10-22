@@ -24,12 +24,14 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QTabWidget,
+    QTreeWidget,
+    QTreeWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
 from .. import __version__
-from ..core import configs, engine, launcher, paths, q3key
+from ..core import configs, engine, launcher, maps, paths, q3key
 from ..core.catalog import MODS, QUAKE3, TEAM_ARENA
 from ..core.context import Prompt
 from ..core.engine import Renderer
@@ -64,6 +66,7 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.addTab(self._install_tab(), "Install")
         self.tabs.addTab(self._play_tab(), "Play")
+        self.tabs.addTab(self._maps_tab(), "Maps")
         layout.addWidget(self.tabs, stretch=3)
 
         self.status = QLabel("Ready")
@@ -145,6 +148,43 @@ class MainWindow(QMainWindow):
         buttons.addWidget(self.install_button)
         buttons.addWidget(self.cancel_button)
         layout.addLayout(buttons)
+        return tab
+
+    def _maps_tab(self) -> QWidget:
+        """The map packs every installation gets; only a list to read."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        note = QLabel(
+            f"These {len(maps.MAPS)} map packs are installed with the game, into baseq3, so "
+            "every mod can load them. They are downloaded from lvlworld.com, or from "
+            "ArenaHub's own backup copy when that fails."
+        )
+        note.setWordWrap(True)
+        note.setForegroundRole(QPalette.ColorRole.PlaceholderText)
+        layout.addWidget(note)
+
+        self.maps_list = QTreeWidget()
+        self.maps_list.setHeaderLabels(["Title", "Author", "Maps", "Modes"])
+        self.maps_list.setRootIsDecorated(False)
+        self.maps_list.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
+        self.maps_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        for pack in maps.MAPS:
+            names = ", ".join(pack.maps)
+            if len(pack.maps) > 3:
+                names = f"{pack.maps[0]} … {pack.maps[-1]} ({len(pack.maps)} maps)"
+            item = QTreeWidgetItem([pack.title, pack.author, names, ", ".join(pack.modes)])
+            tooltip = (
+                f"{pack.filename}, {pack.size / 1024**2:.1f} MiB\n"
+                f"Maps: {', '.join(pack.maps)}\n{pack.url}"
+            )
+            for column in range(item.columnCount()):
+                item.setToolTip(column, tooltip)
+            self.maps_list.addTopLevelItem(item)
+        self.maps_list.setSortingEnabled(True)
+        self.maps_list.sortByColumn(0, Qt.SortOrder.AscendingOrder)
+        for column in range(self.maps_list.columnCount() - 1):
+            self.maps_list.resizeColumnToContents(column)
+        layout.addWidget(self.maps_list)
         return tab
 
     def _play_tab(self) -> QWidget:

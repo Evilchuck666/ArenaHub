@@ -1,4 +1,4 @@
-"""The installation as a whole: Steam data, CD keys, engine and mods."""
+"""The installation as a whole: Steam data, CD keys, engine, mods and maps."""
 
 from __future__ import annotations
 
@@ -7,13 +7,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..steam_depots import PART_SUFFIX
-from . import configs, engine, launcher, net, q3key, shortcuts, steam
+from . import configs, engine, launcher, maps, net, q3key, shortcuts, steam
 from .archive import extract
 from .catalog import QUAKE3, QUAKE3_APP_ID, QUAKE3_DIRS, TEAM_ARENA, TEAM_ARENA_APP_ID, game_by_id
 from .context import Context, TaskError
 
 STAGING = ".arenahub-staging"
-REQUIRED_SPACE = 2 * 1024**3  # game ~500 MiB + mod archives ~570 MiB + extracted mods
+REQUIRED_SPACE = 3 * 1024**3  # game ~500 MiB, mod archives ~570 MiB + extracted, maps ~360 MiB
 
 
 @dataclass
@@ -58,6 +58,11 @@ def install(ctx: Context, options: InstallOptions) -> InstallReport:
 
     for mod_id in options.mods:
         _install_mod(ctx, install_dir, downloads, mod_id)
+
+    ctx.stage("Installing maps")
+    result = maps.install(ctx, install_dir, downloads)
+    ctx.log(f"Added {len(result.added)} map packs; the others were already up to date.")
+    report.warnings += [f"Map not installed: {failure}" for failure in result.failed]
 
     shutil.rmtree(staging, ignore_errors=True)
 

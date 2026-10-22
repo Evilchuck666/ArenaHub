@@ -146,6 +146,19 @@ def test_every_mod_is_listed_and_installed(window, monkeypatch):
     assert started["mods"] == [mod.id for mod in MODS]
 
 
+def test_maps_are_listed(window):
+    from PySide6.QtWidgets import QAbstractItemView
+
+    from arenahub.core.maps import MAPS
+
+    tree = window.maps_list
+    assert tree.topLevelItemCount() == len(MAPS)
+    titles = {tree.topLevelItem(i).text(0) for i in range(tree.topLevelItemCount())}
+    assert titles == {pack.title for pack in MAPS}
+    # Only a list to read: nothing to pick.
+    assert tree.selectionMode() == QAbstractItemView.SelectionMode.NoSelection
+
+
 def install_with_keys(tmp_path, keys):
     folder = tmp_path / "q3"
     for game_dir in ("baseq3", "missionpack"):
