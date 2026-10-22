@@ -61,7 +61,7 @@ def test_server_settings():
     assert 'set g_password "pw"' in lines
     assert 'set rconpassword "admin"' in lines
     assert "set bot_enable 1" in lines
-    assert "set bot_minplayers 4" in lines
+    assert "set bot_minplayers 0" in lines
     assert "set g_spSkill 5" in lines
 
 
@@ -187,3 +187,18 @@ def test_cpma_bots_go_up_to_skill_100():
     assert "set g_spSkill 100" in text.splitlines()
     with pytest.raises(ValueError, match="between 1 and 100"):
         server.validate(options("cpma", "ffa", bot_skill=101))
+
+
+def test_bots_are_added_after_the_first_map():
+    # bot_minplayers would make them leave as people join, so each bot is added.
+    lines = server.config_text(options(bots=3, bot_skill=4)).splitlines()
+    first_map = lines.index("vstr arenahub_map0")
+    assert lines[first_map + 1 :] == ["addbot sarge 4", "addbot visor 4", "addbot ranger 4"]
+
+    many = server.config_text(options(bots=40, max_clients=64)).splitlines()
+    added = [line.split()[1] for line in many if line.startswith("addbot ")]
+    assert len(added) == 40
+    assert added[len(server.BOT_NAMES)] == server.BOT_NAMES[0]
+
+    cpma = server.config_text(options("cpma", "1v1", ["cpm22"], bots=1, bot_skill=100))
+    assert cpma.splitlines()[-2:] == ["map cpm22", "addbot sarge 100"]

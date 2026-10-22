@@ -149,9 +149,11 @@ list of installed maps, so it cannot be added twice.
 
 Rocket Arena 3 is missing because Quake3e cannot load its 32-bit server code.
 
-Bot skill goes from 1 (*I Can Win*) to 5 (*Nightmare!*), except in CPMA, whose
-bots accept skills up to 100. CPMA starts at 100, and each mod remembers its
-own value.
+The bots are added when the server starts and stay when people join, also
+across map changes. ArenaHub does not use `bot_minplayers`, which removes bots
+as players arrive. Bot skill goes from 1 (*I Can Win*) to 5 (*Nightmare!*),
+except in CPMA, whose bots accept skills up to 100. CPMA starts at 100, and
+each mod remembers its own value.
 
 **Start server** writes `arenahub-server.cfg` into the mod folder and runs the
 server with it. Each mod rotates maps its own way:

@@ -33,6 +33,14 @@ CPMA_MAPLISTS = (
 )
 """Every map list CPMA reads; each mode reads one of them, and all get the rotation."""
 
+BOT_NAMES = (
+    "sarge", "visor", "ranger", "anarki", "xaero", "klesk", "hunter", "major", "doom", "orbb",
+    "slash", "razor", "mynx", "keel", "lucy", "grunt", "bitterman", "uriel", "sorlag", "phobos",
+    "tankjr", "wrack", "stripe", "bones", "crash", "daemia", "gorre", "hossman", "patriot",
+    "angel", "cadavre", "biker",
+)  # fmt: skip
+"""The bots of Quake III Arena, which every mod here also has."""
+
 DEFAULT_PORT = 27960
 MAX_TEXT = 64
 
@@ -158,7 +166,7 @@ class ServerOptions:
     public: bool = False
     """Announce the server to the master servers (dedicated 2) instead of LAN only."""
     bots: int = 0
-    """Bots fill the server up to this many players."""
+    """Bots added when the server starts; they stay when people join."""
     bot_skill: int = 3
     physics: str = "CPM"
     """CPMA only: CPM or VQ3 movement."""
@@ -222,7 +230,9 @@ def config_text(options: ServerOptions) -> str:
         f'set g_password "{options.password}"',
         f'set rconpassword "{options.rcon_password}"',
         f"set bot_enable {1 if options.bots else 0}",
-        f"set bot_minplayers {options.bots}",
+        # bot_minplayers would fill the server up to that many players, so bots
+        # would leave as people join: the bots are added one by one below instead.
+        "set bot_minplayers 0",
         f"set g_spSkill {options.bot_skill}",
     ]
     if cpma:
@@ -261,6 +271,9 @@ def config_text(options: ServerOptions) -> str:
                 f'set arenahub_map{index} "map {name}; set nextmap vstr arenahub_map{following}"'
             )
         lines.append("vstr arenahub_map0")
+    # Run once the first map is loaded; bots stay connected across map changes.
+    for index in range(options.bots):
+        lines.append(f"addbot {BOT_NAMES[index % len(BOT_NAMES)]} {options.bot_skill}")
     return "\n".join(lines) + "\n"
 
 

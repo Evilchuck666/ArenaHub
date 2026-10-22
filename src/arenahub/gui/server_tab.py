@@ -116,6 +116,7 @@ class ServerTab(QWidget):
         self.bots = QSpinBox()
         self.bots.setRange(0, 64)
         self.bots.setSpecialValueText("None")
+        self.bots.setToolTip("Bots added when the server starts. They stay when people join.")
         self.bot_skill = SkillSpinBox()
         self.password = QLineEdit()
         self.password.setMaxLength(server.MAX_TEXT)
