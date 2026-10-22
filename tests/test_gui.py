@@ -296,3 +296,38 @@ def test_server_runs_and_stops(window, tmp_path, monkeypatch):
     assert window.install_button.isEnabled()
     assert tab.hostname.isEnabled()
     assert window.settings.value("server/maps/baseq3") in (["q3dm17"], "q3dm17")
+
+
+def test_rotation_maps_leave_the_installed_list(window, tmp_path):
+    window.folder.setText(str(server_folder(tmp_path)))
+    window.refresh()
+    tab = window.server_tab
+
+    def installed():
+        return [tab.available.item(i).text() for i in range(tab.available.count())]
+
+    tab.available.item(0).setSelected(True)
+    tab._add_maps()
+    assert tab.rotation_maps() == ["q3ctf1"]
+    assert installed() == ["q3dm17"]
+
+    # The filter never brings a chosen map back.
+    tab.map_filter.setText("q3")
+    assert installed() == ["q3dm17"]
+
+    tab.rotation.item(0).setSelected(True)
+    tab._remove_maps()
+    assert tab.rotation_maps() == []
+    assert installed() == ["q3ctf1", "q3dm17"]
+
+
+def test_shuffle_keeps_every_map(window, tmp_path, monkeypatch):
+    import random
+
+    window.folder.setText(str(server_folder(tmp_path)))
+    window.refresh()
+    tab = window.server_tab
+    tab.rotation.addItems(["a", "b", "c", "d"])
+    monkeypatch.setattr(random, "shuffle", lambda maps: maps.reverse())
+    tab._shuffle_maps()
+    assert tab.rotation_maps() == ["d", "c", "b", "a"]

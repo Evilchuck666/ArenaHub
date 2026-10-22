@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import re
 from collections.abc import Callable
 from pathlib import Path
@@ -176,6 +177,11 @@ class ServerTab(QWidget):
         right = QVBoxLayout()
         right.addWidget(QLabel("Rotation, in order:"))
         right.addWidget(self.rotation)
+        shuffle = QPushButton("Shuffle")
+        shuffle.setToolTip("Put the rotation in a random order")
+        shuffle.clicked.connect(self._shuffle_maps)
+        right.addWidget(shuffle)
+        self.rotation_buttons.append(shuffle)
         lists.addLayout(left, stretch=1)
         lists.addLayout(buttons)
         lists.addLayout(right, stretch=1)
@@ -299,10 +305,10 @@ class ServerTab(QWidget):
             self._loading = False
 
         self._available = server.available_maps(self.install_dir(), entry.game) if entry else []
-        self._fill_available()
         self.rotation.clear()
         if entry:
-            self.rotation.addItems(self._saved_maps(entry.game.id))
+            self.rotation.addItems(list(dict.fromkeys(self._saved_maps(entry.game.id))))
+        self._fill_available()
         self.form.setRowVisible(self.physics, bool(entry) and entry.game.id == "cpma")
         self._gametype_changed()
         self._set_running(self.running)
@@ -336,9 +342,13 @@ class ServerTab(QWidget):
         self.note.setVisible(bool(parts))
 
     def _fill_available(self) -> None:
+        """Installed maps matching the filter, without those already in the rotation."""
         text = self.map_filter.text().strip().lower()
+        chosen = set(self.rotation_maps())
         self.available.clear()
-        self.available.addItems([name for name in self._available if text in name])
+        self.available.addItems(
+            [name for name in self._available if text in name and name not in chosen]
+        )
 
     def rotation_maps(self) -> list[str]:
         return [self.rotation.item(i).text() for i in range(self.rotation.count())]
@@ -346,10 +356,18 @@ class ServerTab(QWidget):
     def _add_maps(self) -> None:
         for item in self.available.selectedItems():
             self.rotation.addItem(item.text())
+        self._fill_available()
 
     def _remove_maps(self) -> None:
         for item in self.rotation.selectedItems():
             self.rotation.takeItem(self.rotation.row(item))
+        self._fill_available()
+
+    def _shuffle_maps(self) -> None:
+        maps = self.rotation_maps()
+        random.shuffle(maps)
+        self.rotation.clear()
+        self.rotation.addItems(maps)
 
     def _move_maps(self, step: int) -> None:
         rows = sorted(

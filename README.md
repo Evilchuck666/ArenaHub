@@ -135,7 +135,9 @@ Quake III Arena, Team Arena, CPMA, OSP or Threewave. Choose the mod, the game
 type, the time limit and the frag, capture or round limit (whichever the game
 type uses), the server name, port, player slots, bots, passwords, and whether
 to list the server on the Internet master servers. Then build the map rotation
-from the maps installed for that mod, in the order they should be played.
+from the maps installed for that mod, in the order they should be played, or
+press **Shuffle** for a random order. A map added to the rotation leaves the
+list of installed maps, so it cannot be added twice.
 
 | Mod | Game types |
 | --- | --- |
