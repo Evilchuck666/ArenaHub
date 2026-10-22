@@ -27,15 +27,23 @@ def arguments(install_dir: Path, game: Game) -> list[str]:
     return args
 
 
-def command(install_dir: Path, game: Game, renderer: Renderer) -> list[str]:
+def command(
+    install_dir: Path, game: Game, renderer: Renderer, connect: str | None = None
+) -> list[str]:
+    """connect is a server address ("host:port") to join right away."""
     exe = engine.executable(install_dir, renderer)
     if exe is None:
         raise FileNotFoundError("Quake3e is not installed in this folder")
-    return [str(exe), *arguments(install_dir, game)]
+    argv = [str(exe), *arguments(install_dir, game)]
+    if connect:
+        argv += ["+connect", connect]
+    return argv
 
 
-def launch(install_dir: Path, game: Game, renderer: Renderer) -> subprocess.Popen:
-    argv = command(install_dir, game, renderer)
+def launch(
+    install_dir: Path, game: Game, renderer: Renderer, connect: str | None = None
+) -> subprocess.Popen:
+    argv = command(install_dir, game, renderer, connect)
     options: dict = {"cwd": install_dir, "env": paths.child_env(), "stdin": subprocess.DEVNULL}
     if paths.system() == "windows":
         options["creationflags"] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP

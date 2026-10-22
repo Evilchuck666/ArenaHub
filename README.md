@@ -5,8 +5,8 @@
 ArenaHub is a desktop installer and launcher for Quake III Arena on GNU/Linux,
 Windows and macOS. It downloads your own Steam copy of the game, writes your CD
 keys, installs the [Quake3e](https://github.com/ec-/Quake3e) engine and adds
-four classic mods and a collection of community maps. Then you play from the
-same window.
+four classic mods and a collection of community maps. Then you play, or run
+your own server, from the same window.
 
 ## What it installs
 
@@ -127,6 +127,49 @@ time, so ArenaHub does not need to be running:
 
 Installing again replaces the shortcuts. If one cannot be created, the
 installation still finishes and reports a warning.
+
+### Running a server
+
+The **Server** tab starts Quake3e's dedicated server (`quake3e.ded`) for
+Quake III Arena, Team Arena, CPMA, OSP or Threewave. Choose the mod, the game
+type, the time limit and the frag, capture or round limit (whichever the game
+type uses), the server name, port, player slots, bots, passwords, and whether
+to list the server on the Internet master servers. Then build the map rotation
+from the maps installed for that mod, in the order they should be played.
+
+| Mod | Game types |
+| --- | --- |
+| Quake III Arena | Free For All, Tournament, Team Deathmatch, CTF |
+| Team Arena | the above, plus One Flag CTF, Overload and Harvester |
+| CPMA | FFA, 1v1, 2v2, TDM, CTF, Clan Arena, Freeze Tag, Capture Strike, NTF; CPM or VQ3 physics |
+| OSP | FFA, 1v1, TDM, CTF, Clan Arena |
+| Threewave CTF | FFA, Tournament, TDM, Threewave CTF, One Flag CTF, Capture Strike, Classic CTF, Threewave Arena |
+
+Rocket Arena 3 is missing because Quake3e cannot load its 32-bit server code.
+
+**Start server** writes `arenahub-server.cfg` into the mod folder and runs the
+server with it. Each mod rotates maps its own way:
+
+- Quake III Arena, Team Arena and Threewave use the usual `nextmap` chain.
+  Threewave's voting portal is turned off.
+- OSP gets its own map queue, `osp/arenahub-maps.txt`.
+- CPMA ignores `nextmap` and `g_gametype`. ArenaHub writes a custom mode,
+  `cpma/modes/ARENAHUB.cfg`, and map lists in `cpma/cfg-arenahub/`, a copy of
+  `cfg-maps/` whose map lists hold the rotation. CPMA does not rotate maps in
+  1v1: players change them by vote.
+
+As in any Quake III server, the next map loads when the intermission ends. In
+Quake III Arena and Team Arena that takes a human player pressing fire
+(ready); bots alone never end it. OSP and CPMA move on by themselves.
+
+The server's console output goes to the log at the bottom of the window. You
+can type server commands such as `status`, `map q3dm17` or `kick <name>`.
+**Join** starts the game connected to your server. **Stop server** sends
+`quit`, and the server is closed if it does not stop. Installing and changing
+the folder are disabled while the server runs, and closing ArenaHub stops it.
+On Windows the server shows its console in its own window, so its output does
+not reach the log and the command field is hidden. For players on the
+Internet, forward the UDP port to your computer in your router.
 
 ### Your Steam account
 

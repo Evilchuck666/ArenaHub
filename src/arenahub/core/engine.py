@@ -60,6 +60,14 @@ def install(ctx: Context, install_dir: Path, download_dir: Path) -> list[Path]:
     return written
 
 
+def server_executable(install_dir: Path) -> Path | None:
+    """The Quake3e dedicated server in install_dir, if installed."""
+    candidates = sorted(p for p in install_dir.glob("quake3e*.ded*") if p.is_file())
+    if paths.system() == "windows":
+        candidates = [p for p in candidates if p.suffix.lower() == ".exe"]
+    return (candidates or [None])[0]
+
+
 def executable(install_dir: Path, renderer: Renderer = Renderer.OPENGL) -> Path | None:
     """The Quake3e client in install_dir for the chosen renderer, if installed."""
     candidates = sorted(

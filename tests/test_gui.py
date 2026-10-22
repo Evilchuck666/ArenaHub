@@ -199,3 +199,100 @@ def test_invalid_key_file_counts_as_missing(window, tmp_path):
     window.refresh()
     assert window.keys_form.isRowVisible(window.quake3_key)
     assert not window.keys_form.isRowVisible(window.team_arena_key)
+
+
+def server_folder(tmp_path):
+    from .conftest import make_zip
+
+    folder = tmp_path / "q3"
+    (folder / "baseq3").mkdir(parents=True)
+    make_zip(folder / "baseq3" / "pak0.pk3", {"maps/q3dm17.bsp": "", "maps/q3ctf1.bsp": ""})
+    (folder / "arena").mkdir()
+    (folder / "arena" / "vm.pk3").write_text("")  # Rocket Arena 3 cannot host
+    return folder
+
+
+def wait_until(condition, timeout=5000):
+    from PySide6.QtCore import QDeadlineTimer, QEventLoop
+    from PySide6.QtWidgets import QApplication
+
+    deadline = QDeadlineTimer(timeout)
+    while not condition() and not deadline.hasExpired():
+        QApplication.processEvents(QEventLoop.ProcessEventsFlag.AllEvents, 50)
+    return condition()
+
+
+def test_server_tab_offers_hostable_games_and_maps(window, tmp_path):
+    window.folder.setText(str(server_folder(tmp_path)))
+    window.refresh()
+    tab = window.server_tab
+
+    assert [tab.game.itemData(i) for i in range(tab.game.count())] == ["baseq3"]
+    assert [tab.available.item(i).text() for i in range(tab.available.count())] == [
+        "q3ctf1",
+        "q3dm17",
+    ]
+    assert not tab.form.isRowVisible(tab.physics)
+
+    tab.gametype.setCurrentIndex(tab.gametype.findData("ctf"))
+    visible = [name for name, box in tab.limits.items() if tab.form.isRowVisible(box)]
+    assert visible == ["capturelimit"]
+
+
+def test_server_needs_a_rotation(window, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+
+    warnings = []
+    monkeypatch.setattr(QMessageBox, "warning", lambda *args: warnings.append(args[2]))
+    window.folder.setText(str(server_folder(tmp_path)))
+    window.refresh()
+    window.server_tab.start()
+    assert warnings == ["Add at least one map to the rotation."]
+    assert not window.server_tab.running
+
+
+def test_server_runs_and_stops(window, tmp_path, monkeypatch):
+    import sys
+
+    from arenahub.core import launcher, server
+
+    # A stand-in for the dedicated server: prints, echoes commands, quits on "quit".
+    script = (
+        "import sys\n"
+        "print('^1Server ^7ready', flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    if line.strip() == 'quit': break\n"
+        "    print('got ' + line.strip(), flush=True)\n"
+    )
+    monkeypatch.setattr(server, "command", lambda folder, options: [sys.executable, "-c", script])
+    folder = server_folder(tmp_path)
+    window.folder.setText(str(folder))
+    window.refresh()
+    tab = window.server_tab
+    tab.available.item(1).setSelected(True)
+    tab._add_maps()
+    joined = []
+    monkeypatch.setattr(
+        launcher,
+        "launch",
+        lambda folder, game, renderer, connect: joined.append((game.id, connect)),
+    )
+
+    tab.start()
+    assert tab.running
+    assert (folder / "baseq3" / server.CONFIG_NAME).is_file()
+    assert not window.install_button.isEnabled()
+    assert not tab.hostname.isEnabled()
+    assert wait_until(lambda: "Server ready" in window.log_view.toPlainText())
+
+    tab.console.setText("status")
+    tab.send_command()
+    assert wait_until(lambda: "got status" in window.log_view.toPlainText())
+    tab.join_button.click()
+    assert joined == [("baseq3", "127.0.0.1:27960")]
+
+    tab.stop()
+    assert wait_until(lambda: not tab.running)
+    assert window.install_button.isEnabled()
+    assert tab.hostname.isEnabled()
+    assert window.settings.value("server/maps/baseq3") in (["q3dm17"], "q3dm17")

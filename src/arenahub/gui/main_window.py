@@ -32,10 +32,11 @@ from PySide6.QtWidgets import (
 
 from .. import __version__
 from ..core import configs, engine, launcher, maps, paths, q3key
-from ..core.catalog import MODS, QUAKE3, TEAM_ARENA
+from ..core.catalog import MODS, QUAKE3, TEAM_ARENA, Game
 from ..core.context import Prompt
 from ..core.engine import Renderer
 from ..core.installer import InstallOptions, InstallReport
+from .server_tab import ServerTab
 from .widgets import DecimalSpinBox
 from .worker import InstallWorker
 
@@ -66,6 +67,8 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.addTab(self._install_tab(), "Install")
         self.tabs.addTab(self._play_tab(), "Play")
+        self.server_tab = ServerTab(self.install_dir)
+        self.tabs.addTab(self.server_tab, "Server")
         self.tabs.addTab(self._maps_tab(), "Maps")
         layout.addWidget(self.tabs, stretch=3)
 
@@ -80,6 +83,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.log_view, stretch=2)
 
         self.setCentralWidget(central)
+        self.server_tab.log.connect(self.log_view.appendPlainText)
+        self.server_tab.status.connect(self._set_status)
+        self.server_tab.running_changed.connect(lambda _running: self._set_busy(self.busy))
+        self.server_tab.join_requested.connect(self.join)
         self._load_settings()
         self.refresh()
 
@@ -281,6 +288,7 @@ class MainWindow(QMainWindow):
         s.setValue("renderer", self.renderer.currentData())
         s.setValue("shortcuts", "true" if self.shortcuts.isChecked() else "false")
         s.remove("mods")  # the mod selection of earlier versions
+        self.server_tab.save_settings()
 
     # State ------------------------------------------------------------------------
 
@@ -321,6 +329,7 @@ class MainWindow(QMainWindow):
         self.username.setEnabled(self.use_steam.isChecked())
         self.install_button.setText("Update" if has_quake3 else "Install")
         self.open_folder.setEnabled(folder.is_dir())
+        self.server_tab.refresh()
 
         # Ask for a key only for installed games whose q3key is missing or invalid.
         missing = False
@@ -384,10 +393,13 @@ class MainWindow(QMainWindow):
             self.worker.context.cancel()
 
     def _set_busy(self, busy: bool) -> None:
-        self.install_button.setEnabled(not busy)
+        # A running server keeps the folder and its files as they are.
+        serving = self.server_tab.running
+        self.install_button.setEnabled(not busy and not serving)
         self.cancel_button.setEnabled(busy)
         self.play_button.setEnabled(not busy)
-        self.folder.setEnabled(not busy)
+        self.folder.setEnabled(not busy and not serving)
+        self.server_tab.set_enabled_for_install(busy)
 
     def _set_status(self, text: str) -> None:
         self.status.setText(text)
@@ -503,6 +515,18 @@ class MainWindow(QMainWindow):
             return
         self._set_status(f"Started {game.title}")
 
+    def join(self, game: Game, address: str) -> None:
+        """Play on the server started from the Server tab."""
+        if not self.save_player():
+            return
+        renderer = Renderer(self.renderer.currentData())
+        try:
+            launcher.launch(self.install_dir(), game, renderer, connect=address)
+        except OSError as exc:
+            QMessageBox.critical(self, "ArenaHub", f"Could not start {game.title}: {exc}")
+            return
+        self._set_status(f"Joining the server at {address}")
+
     def save_keys(self) -> None:
         folder = self.install_dir()
         problems = []
@@ -533,5 +557,13 @@ class MainWindow(QMainWindow):
             self.worker.context.cancel()
             self.thread.quit()
             self.thread.wait()
+        if self.server_tab.running:
+            answer = QMessageBox.question(
+                self, "ArenaHub", "A server is running. Stop it and quit?"
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
+            self.server_tab.stop_and_wait()
         self._save_settings()
         event.accept()
