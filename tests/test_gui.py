@@ -383,3 +383,46 @@ def test_activity_panel_follows_the_installation(window, monkeypatch):
     window._on_failed("network down")
     assert window._stages[-1].text() == "✕   Installing Quake3e"
     assert window.status.text() == "Installation failed"
+
+
+def test_humans_vs_bots_only_for_team_modes(window, tmp_path):
+    window.folder.setText(str(server_folder(tmp_path)))
+    window.refresh()
+    tab = window.server_tab
+    tab.gametype.setCurrentIndex(tab.gametype.findData("ffa"))
+    assert not tab.form.isRowVisible(tab.humans_vs_bots)
+    tab.gametype.setCurrentIndex(tab.gametype.findData("ctf"))
+    assert tab.form.isRowVisible(tab.humans_vs_bots)
+
+
+def test_people_who_join_red_are_moved_to_blue(window, tmp_path, monkeypatch):
+    import sys
+
+    from arenahub.core import server
+
+    # A stand-in server: a person joins red (the line arrives in two pieces), then
+    # it echoes every command it receives.
+    script = (
+        "import sys, time\n"
+        "print('ClientUserinfoChanged: 0 n\\\\Sarge\\\\t\\\\1\\\\skill\\\\3.00', flush=True)\n"
+        "sys.stdout.write('ClientUserinfoChanged: 5 n\\\\Play'); sys.stdout.flush()\n"
+        "time.sleep(0.3)\n"
+        "print('er\\\\t\\\\1\\\\model\\\\sarge', flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    if line.strip() == 'quit': break\n"
+        "    print('got ' + line.strip(), flush=True)\n"
+    )
+    monkeypatch.setattr(server, "command", lambda folder, options: [sys.executable, "-c", script])
+    window.folder.setText(str(server_folder(tmp_path)))
+    window.refresh()
+    tab = window.server_tab
+    tab.gametype.setCurrentIndex(tab.gametype.findData("ctf"))
+    tab.rotation.addItem("q3ctf1")
+    tab.bots.setValue(2)
+    tab.humans_vs_bots.setChecked(True)
+
+    tab.start()
+    assert wait_until(lambda: "got forceteam 5 blue" in window.log_view.toPlainText())
+    assert "forceteam 0" not in window.log_view.toPlainText()  # bots stay on red
+    tab.stop()
+    assert wait_until(lambda: not tab.running)

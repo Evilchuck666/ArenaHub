@@ -222,3 +222,40 @@ def test_team_flags():
     for entry in server.SERVER_GAMES:
         for kind in entry.gametypes:
             assert kind.teams == (kind.id not in solo), (entry.game.id, kind.id)
+
+
+def test_humans_vs_bots_puts_every_bot_on_red():
+    opts = options("osp", "tdm", ["q3dm7"], bots=3, humans_vs_bots=True)
+    lines = server.config_text(opts).splitlines()
+    assert [line for line in lines if line.startswith("addbot ")] == [
+        "addbot sarge 3 red",
+        "addbot visor 3 red",
+        "addbot ranger 3 red",
+    ]
+    assert "set g_teamAutoJoin 1" in lines
+    assert "set g_teamForceBalance 0" in lines
+
+    # Without teams there is nothing to choose.
+    ffa = server.config_text(options(bots=1, humans_vs_bots=True)).splitlines()
+    assert "addbot sarge 3" in ffa
+    assert "set g_teamAutoJoin 1" not in ffa
+
+
+@pytest.mark.parametrize(
+    ("line", "client"),
+    [
+        (r"ClientUserinfoChanged: 7 n\Player\t\1\model\sarge\hmodel\sarge\c1\4", 7),
+        (r"ClientUserinfoChanged: 2 n\Player\t\1\model\anarki\c1\n\a\0\nick\Pl\c\0", 2),
+        (r"ClientUserinfoChanged: 0 n\Sarge\t\1\model\sarge\skill\    3.00\tt\0", None),
+        (r"ClientUserinfoChanged: 7 n\Player\t\2\model\sarge", None),
+        (r"ClientUserinfoChanged: 7 n\Player\t\3\model\sarge", None),
+        ('broadcast: print "Player entered the game"', None),
+    ],
+)
+def test_human_on_red(line, client):
+    assert server.human_on_red(line) == client
+
+
+def test_move_to_blue_commands():
+    assert server.server_game("baseq3").to_blue.format(client=4) == "forceteam 4 blue"
+    assert server.server_game("cpma").to_blue.format(client=4) == "putblue 4"

@@ -73,6 +73,8 @@ class ServerGame:
     max_bot_skill: int = 5
     """Quake III's bots go from 1 (I Can Win) to 5 (Nightmare!)."""
     default_bot_skill: int = 3
+    to_blue: str = "forceteam {client} blue"
+    """Server command that moves a client to the blue team."""
 
 
 SERVER_GAMES: tuple[ServerGame, ...] = (
@@ -106,6 +108,7 @@ SERVER_GAMES: tuple[ServerGame, ...] = (
         # CPMA's bots accept skills up to 100 (higher values are clamped to it).
         max_bot_skill=100,
         default_bot_skill=100,
+        to_blue="putblue {client}",  # CPMA has no forceteam
     ),
     ServerGame(
         OSP,
@@ -178,6 +181,13 @@ class ServerOptions:
     bot_skill: int = 3
     physics: str = "CPM"
     """CPMA only: CPM or VQ3 movement."""
+    humans_vs_bots: bool = False
+    """Team modes only: every bot plays on red, people on blue (see human_on_red)."""
+
+    @property
+    def bots_team(self) -> bool:
+        """True when every bot goes to red."""
+        return self.humans_vs_bots and self.gametype.teams
 
     @property
     def entry(self) -> ServerGame:
@@ -257,6 +267,9 @@ def config_text(options: ServerOptions) -> str:
             f"set timelimit {options.timelimit}",
             f"set {limit_cvar} {options.score_limit}",
         ]
+    if options.bots_team:
+        # People join the smaller team, blue, and may join it however big it gets.
+        lines += ["set g_teamAutoJoin 1", "set g_teamForceBalance 0"]
     if entry.game is OSP:
         lines += [
             f"set map_file {OSP_MAP_FILE}",
@@ -283,12 +296,34 @@ def config_text(options: ServerOptions) -> str:
     # In team modes each bot gets its team: the game would put them all in one,
     # because none has joined a team yet when the next one is added. Red gets the
     # odd one, so the first person to join (sent to the smaller team) evens them.
+    # Humans vs bots puts every bot on red.
     for index in range(options.bots):
         bot = f"addbot {BOT_NAMES[index % len(BOT_NAMES)]} {options.bot_skill}"
-        if kind.teams:
+        if options.bots_team:
+            bot += " red"
+        elif kind.teams:
             bot += " red" if index % 2 == 0 else " blue"
         lines.append(bot)
     return "\n".join(lines) + "\n"
+
+
+_USERINFO = re.compile(r"ClientUserinfoChanged: (\d+) (.*)")
+
+
+def human_on_red(line: str) -> int | None:
+    """The client number of a person who has joined red, from a server console line.
+
+    In humans vs bots the window answers with "forceteam <n> blue". Every mod
+    prints the userinfo of each client as it changes; only bots have a skill.
+    """
+    match = _USERINFO.match(line.strip())
+    if not match:
+        return None
+    fields = match[2].split("\\")
+    info = dict(zip(fields[::2], fields[1::2], strict=False))
+    if "skill" in info or info.get("t") != "1":
+        return None
+    return int(match[1])
 
 
 def write_config(install_dir: Path, options: ServerOptions) -> Path:

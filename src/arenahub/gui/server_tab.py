@@ -74,6 +74,8 @@ class ServerTab(QWidget):
         self.process: QProcess | None = None
         self._options: ServerOptions | None = None
         self._available: list[str] = []
+        self._partial = ""
+        """The end of the server output that is not a whole line yet."""
         self._shown_game: ServerGame | None = None
         self._installing = False
         self._loading = False
@@ -129,6 +131,11 @@ class ServerTab(QWidget):
         self.rcon_password.setMaxLength(server.MAX_TEXT)
         self.rcon_password.setEchoMode(QLineEdit.EchoMode.Password)
         self.rcon_password.setPlaceholderText("None: remote admin disabled")
+        self.humans_vs_bots = QCheckBox("Every bot on red, people on blue")
+        self.humans_vs_bots.setToolTip(
+            "People who join red are moved to blue while the server runs."
+        )
+        self.humans_vs_bots.toggled.connect(self._update_note)
         self.public = QCheckBox("List the server on the Internet master servers")
         self.public.toggled.connect(self._update_note)
 
@@ -143,6 +150,7 @@ class ServerTab(QWidget):
             form.addRow(LIMIT_LABELS[name], box)
         form.addRow("Bots:", self.bots)
         form.addRow("Bot skill:", self.bot_skill)
+        form.addRow("Humans vs bots:", self.humans_vs_bots)
         form.addRow("Password:", self.password)
         form.addRow("RCON password:", self.rcon_password)
         form.addRow(self.public)
@@ -251,6 +259,7 @@ class ServerTab(QWidget):
         self.rcon_password.setText(s.value("server/rcon_password", ""))
         self.public.setChecked(s.value("server/public", "false") == "true")
         self.physics.setCurrentText(s.value("server/physics", defaults.physics))
+        self.humans_vs_bots.setChecked(s.value("server/humans_vs_bots", "false") == "true")
 
     def save_settings(self) -> None:
         s = self.settings
@@ -266,6 +275,7 @@ class ServerTab(QWidget):
         s.setValue("server/rcon_password", self.rcon_password.text())
         s.setValue("server/public", "true" if self.public.isChecked() else "false")
         s.setValue("server/physics", self.physics.currentText())
+        s.setValue("server/humans_vs_bots", "true" if self.humans_vs_bots.isChecked() else "false")
         if entry := self.current_game():
             s.setValue("server/game", entry.game.id)
             self._save_game_choices(entry)
@@ -348,11 +358,12 @@ class ServerTab(QWidget):
 
     def _gametype_changed(self, _index: int = 0) -> None:
         entry = self.current_game()
-        limit = None
+        kind = None
         if entry and self.gametype.currentData():
-            limit = server.gametype(entry, self.gametype.currentData()).limit
+            kind = server.gametype(entry, self.gametype.currentData())
         for name, box in self.limits.items():
-            self.form.setRowVisible(box, name == limit)
+            self.form.setRowVisible(box, kind is not None and name == kind.limit)
+        self.form.setRowVisible(self.humans_vs_bots, kind is not None and kind.teams)
         self._update_note()
 
     def _update_note(self) -> None:
@@ -371,6 +382,8 @@ class ServerTab(QWidget):
             )
         if paths.system() == "windows":
             parts.append(WINDOWS_CONSOLE_NOTE)
+            if self.humans_vs_bots.isChecked() and self.form.isRowVisible(self.humans_vs_bots):
+                parts.append("People who pick red there are not moved to blue.")
         self.note.setText(" ".join(parts))
         self.note.setVisible(bool(parts))
 
@@ -434,6 +447,7 @@ class ServerTab(QWidget):
             bots=self.bots.value(),
             bot_skill=self.bot_skill.value(),
             physics=self.physics.currentText(),
+            humans_vs_bots=self.humans_vs_bots.isChecked(),
         )
 
     # Running ------------------------------------------------------------------
@@ -451,8 +465,8 @@ class ServerTab(QWidget):
         settings = (
             self.game, self.gametype, self.physics, self.hostname, self.port, self.max_clients,
             self.timelimit, *self.limits.values(), self.bots, self.bot_skill, self.password,
-            self.rcon_password, self.public, self.map_filter, self.available, self.rotation,
-            *self.rotation_buttons,
+            self.rcon_password, self.humans_vs_bots, self.public, self.map_filter, self.available,
+            self.rotation, *self.rotation_buttons,
         )  # fmt: skip
         for widget in settings:
             widget.setEnabled(not running)
@@ -516,10 +530,26 @@ class ServerTab(QWidget):
     def _read_output(self) -> None:
         if self.process is None:
             return
-        text = bytes(self.process.readAllStandardOutput()).decode("utf-8", "replace")
-        for line in text.splitlines():
+        text = self._partial + bytes(self.process.readAllStandardOutput()).decode(
+            "utf-8", "replace"
+        )
+        lines = text.split("\n")
+        self._partial = lines.pop()
+        for line in lines:
             if line := COLOR_CODE.sub("", line).rstrip():
                 self.log.emit(line)
+                self._keep_humans_on_blue(line)
+
+    def _keep_humans_on_blue(self, line: str) -> None:
+        """In humans vs bots, move anyone who joins red over to blue."""
+        options = self._options
+        if options is None or not options.bots_team or self.process is None:
+            return
+        client = server.human_on_red(line)
+        if client is not None:
+            command = options.entry.to_blue.format(client=client)
+            self.log.emit(f"] {command}  (humans vs bots: people play on blue)")
+            self.process.write((command + "\n").encode())
 
     def send_command(self) -> None:
         command = self.console.text().strip()
@@ -570,6 +600,9 @@ class ServerTab(QWidget):
         if process is None:
             return
         self._read_output()
+        if line := COLOR_CODE.sub("", self._partial).rstrip():
+            self.log.emit(line)
+        self._partial = ""
         self.process = self._options = None
         process.deleteLater()
         self.log.emit("== Server stopped")
