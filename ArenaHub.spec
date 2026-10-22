@@ -51,6 +51,8 @@ datas += [
     (str(cfg), str(cfg.parent.relative_to(ROOT)))
     for cfg in sorted((ROOT / "assets" / "cfg").glob("*/*.cfg"))
 ]
+# Levelshot thumbnails for the Maps tab (the map packs themselves are downloaded).
+datas += [(str(jpg), "assets/levelshots") for jpg in sorted((ROOT / "assets" / "levelshots").glob("*.jpg"))]
 datas += copy_metadata("steam-next")
 binaries = []
 

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import requests
 
-from . import net
+from . import net, paths
 from .context import Context, TaskError
 
 LVLWORLD = "https://lvlworld.com"
@@ -24,6 +24,9 @@ BACKUP = "https://raw.githubusercontent.com/Evilchuck666/ArenaHub/main/assets/ma
 
 GAME_DIR = "baseq3"
 """Maps go into baseq3, so every mod can load them."""
+
+THUMBNAIL_SIZE = (96, 72)
+"""Size of the levelshot thumbnails in the Maps tab (stored at twice that size)."""
 
 
 @dataclass(frozen=True)
@@ -60,6 +63,15 @@ class MapPack:
     @property
     def backup_url(self) -> str:
         return f"{BACKUP}/{self.filename}"
+
+
+def thumbnail_name(pack: MapPack) -> str:
+    return f"{Path(pack.filename).stem.lower()}.jpg"
+
+
+def thumbnail(pack: MapPack) -> Path:
+    """The bundled levelshot of the pack's first map (made by scripts/make_thumbnails.py)."""
+    return paths.resource("levelshots", thumbnail_name(pack))
 
 
 MAPS: tuple[MapPack, ...] = (

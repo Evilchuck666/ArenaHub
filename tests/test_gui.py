@@ -155,6 +155,8 @@ def test_maps_are_listed(window):
     assert tree.topLevelItemCount() == len(MAPS)
     titles = {tree.topLevelItem(i).text(0) for i in range(tree.topLevelItemCount())}
     assert titles == {pack.title for pack in MAPS}
+    for i in range(tree.topLevelItemCount()):
+        assert not tree.topLevelItem(i).icon(0).isNull(), tree.topLevelItem(i).text(0)
     # Only a list to read: nothing to pick.
     assert tree.selectionMode() == QAbstractItemView.SelectionMode.NoSelection
 

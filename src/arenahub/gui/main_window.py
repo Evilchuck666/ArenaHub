@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt, QThread, QTimer, QUrl
+from PySide6.QtCore import QSettings, QSize, Qt, QThread, QTimer, QUrl
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QIcon, QPalette
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -168,6 +168,7 @@ class MainWindow(QMainWindow):
         self.maps_list.setRootIsDecorated(False)
         self.maps_list.setSelectionMode(QTreeWidget.SelectionMode.NoSelection)
         self.maps_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.maps_list.setIconSize(QSize(*maps.THUMBNAIL_SIZE))
         for pack in maps.MAPS:
             names = ", ".join(pack.maps)
             if len(pack.maps) > 3:
@@ -179,6 +180,8 @@ class MainWindow(QMainWindow):
             )
             for column in range(item.columnCount()):
                 item.setToolTip(column, tooltip)
+            if (levelshot := maps.thumbnail(pack)).is_file():
+                item.setIcon(0, QIcon(str(levelshot)))
             self.maps_list.addTopLevelItem(item)
         self.maps_list.setSortingEnabled(True)
         self.maps_list.sortByColumn(0, Qt.SortOrder.AscendingOrder)

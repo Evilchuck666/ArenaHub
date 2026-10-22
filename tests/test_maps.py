@@ -45,6 +45,11 @@ def test_every_pack_has_a_backup_copy():
         assert p.backup_url.endswith(f"/assets/maps/{p.filename}")
 
 
+def test_every_pack_has_a_thumbnail():
+    for p in maps.MAPS:
+        assert maps.thumbnail(p).is_file(), f"{p.filename}: run scripts/make_thumbnails.py"
+
+
 @pytest.fixture
 def offline(tmp_path, monkeypatch):
     """lvlworld serves a release archive; the backup serves the bare .pk3."""

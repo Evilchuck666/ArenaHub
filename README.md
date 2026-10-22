@@ -28,8 +28,8 @@ Quake3e you can join Rocket Arena servers, but you cannot host local matches.
 ### Maps
 
 ArenaHub also adds 47 community map packs (about 360 MB) to `baseq3`, so every
-mod can load them. The **Maps** tab lists them with their authors and map
-names. They are defined in `src/arenahub/core/maps.py`, each one pinned to a
+mod can load them. The **Maps** tab lists them with a levelshot thumbnail,
+their authors and map names. They are defined in `src/arenahub/core/maps.py`, each one pinned to a
 SHA-256 checksum:
 
 - 44 come from [lvlworld.com](https://lvlworld.com). Its downloads need a
@@ -45,6 +45,11 @@ SHA-256 checksum:
 
 A map pack that cannot be downloaded is reported as a warning at the end of the
 installation. It does not stop the installation.
+
+The thumbnails in `assets/levelshots/` are bundled into the executable, so the
+list shows them before anything is installed. After adding a map pack to
+`maps.py` and `assets/maps/`, regenerate them with
+`uv run python scripts/make_thumbnails.py`.
 
 The `map_cpm*` packs come with the CPMA map pack, and `q3wpak0-4` and
 `derean01` come with Threewave CTF.
@@ -173,6 +178,7 @@ assets/icons/      application icon (regenerate with scripts/make_icons.py)
 assets/links/      .desktop templates for the GNU/Linux shortcuts
 assets/cfg/        game configs copied into each game folder
 assets/maps/       backup copy of the map packs (downloaded, not bundled)
+assets/levelshots/ map thumbnails for the Maps tab (regenerate with scripts/make_thumbnails.py)
 ```
 
 The Steam helper runs as a separate process, which is the same executable
