@@ -176,5 +176,3 @@ def _install_mod(ctx: Context, install_dir: Path, downloads: Path, mod_id: str) 
     for item in mod.downloads:
         archive = net.fetch(ctx, item.urls, downloads / item.filename, item.sha256, item.filename)
         extract(ctx, archive, install_dir, item.rule)
-    if mod.notes:
-        ctx.log(f"Note: {mod.notes}")

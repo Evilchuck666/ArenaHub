@@ -51,7 +51,6 @@ class Game:
     """File (relative to the installation) whose presence means the game is installed."""
     downloads: tuple[Download, ...] = field(default=())
     requires_team_arena: bool = False
-    notes: str = ""
 
     @property
     def is_mod(self) -> bool:
@@ -139,10 +138,6 @@ ROCKET_ARENA = Game(
             size=182481366,
             rule=Rule(include=("arena/*",), exclude=(*WINDOWS_ONLY, "*.sh")),
         ),
-    ),
-    notes=(
-        "Rocket Arena 3 ships its server code only as 32-bit native libraries, so "
-        "Quake3e can join Rocket Arena servers but cannot host local matches."
     ),
 )
 

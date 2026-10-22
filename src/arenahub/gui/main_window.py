@@ -43,11 +43,6 @@ from .theme import COLORS, label, panel
 from .widgets import DecimalSpinBox
 from .worker import InstallWorker
 
-STEAM_NOTE = (
-    "Quake III Arena is downloaded from Steam with a single login, so your account must own "
-    "it. Team Arena is downloaded too when your account owns it. Your password and Steam Guard "
-    "code are only sent to Steam and are never stored by ArenaHub."
-)
 MAX_STAGES = 7
 """Installation steps listed in the activity panel; older ones scroll away."""
 
@@ -206,7 +201,6 @@ class MainWindow(QMainWindow):
         form.addWidget(self.use_steam)
         form.addWidget(label("Steam username", "muted"))
         form.addWidget(self.username)
-        form.addWidget(label(STEAM_NOTE, "muted", wrap=True))
         layout.addWidget(steam)
 
         mods, mods_layout = panel("02   Mods installed with the game")
@@ -215,8 +209,6 @@ class MainWindow(QMainWindow):
             entry.setSpacing(2)
             entry.addWidget(label(mod.title, wrap=True))
             entry.addWidget(label(mod.description, "muted", wrap=True))
-            if mod.notes:
-                entry.addWidget(label(mod.notes, "muted", wrap=True))
             mods_layout.addLayout(entry)
         layout.addWidget(mods)
 
@@ -399,7 +391,7 @@ class MainWindow(QMainWindow):
         for game in installed:
             item = QListWidgetItem(game.title)
             item.setData(Qt.ItemDataRole.UserRole, game)
-            item.setToolTip(game.notes or game.description)
+            item.setToolTip(game.description)
             self.games.addItem(item)
         if self.games.count():
             self.games.setCurrentRow(0)
