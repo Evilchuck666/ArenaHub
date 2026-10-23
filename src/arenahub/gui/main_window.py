@@ -108,7 +108,7 @@ class MainWindow(QMainWindow):
     def _main_column(self) -> QWidget:
         content = QWidget()
         column = QVBoxLayout(content)
-        column.setContentsMargins(0, 0, 10, 0)
+        column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(16)
 
         hero = QHBoxLayout()
@@ -125,13 +125,14 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
         self.tabs.tabBar().setDrawBase(False)  # the pane's own top border is the base line
-        self.tabs.addTab(self._install_tab(), "Install")
-        self.tabs.addTab(self._play_tab(), "Play")
+        # Each page scrolls on its own, so a long tab doesn't add a scroll bar to the others.
+        self.tabs.addTab(theme.scrollable(self._install_tab()), "Install")
+        self.tabs.addTab(theme.scrollable(self._play_tab()), "Play")
         self.server_tab = ServerTab(self.install_dir)
-        self.tabs.addTab(self.server_tab, "Server")
-        self.tabs.addTab(self._maps_tab(), "Maps")
+        self.tabs.addTab(theme.scrollable(self.server_tab), "Server")
+        self.tabs.addTab(theme.scrollable(self._maps_tab()), "Maps")
         column.addWidget(self.tabs, stretch=1)
-        return theme.scrollable(content)
+        return content
 
     def _activity_panel(self) -> QWidget:
         side, layout = panel()

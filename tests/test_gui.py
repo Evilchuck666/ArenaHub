@@ -433,3 +433,22 @@ def test_folder_is_chosen_on_the_install_tab_only(window):
     for index in range(window.tabs.count()):
         window.tabs.setCurrentIndex(index)
         assert window.folder.isVisible() == (index == 0), window.tabs.tabText(index)
+
+
+def test_only_tabs_that_overflow_scroll(window):
+    def scrolling() -> list[str]:
+        QApplication.processEvents()
+        tabs = []
+        for index in range(window.tabs.count()):
+            window.tabs.setCurrentIndex(index)
+            QApplication.processEvents()
+            if window.tabs.widget(index).verticalScrollBar().isVisible():
+                tabs.append(window.tabs.tabText(index))
+        return tabs
+
+    window.show()
+    window.resize(1120, 1400)
+    assert scrolling() == []
+    window.resize(window.minimumSize())
+    assert "Server" in scrolling()
+    assert "Play" not in scrolling()  # a long tab doesn't make the short ones scroll

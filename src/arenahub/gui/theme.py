@@ -108,6 +108,7 @@ QPlainTextEdit { background: @INPUT; border: 1px solid @PANEL_BORDER; border-rad
 
 QScrollBar:vertical { background: transparent; width: 8px; margin: 2px 0; }
 QScrollBar:horizontal { background: transparent; height: 8px; margin: 0 2px; }
+QScrollBar#page:vertical { width: 18px; margin: 2px 0 2px 10px; }
 QScrollBar::handle:vertical { background: #3e2c29; border-radius: 4px; min-height: 24px; }
 QScrollBar::handle:horizontal { background: #3e2c29; border-radius: 4px; min-width: 24px; }
 QScrollBar::handle:hover { background: #5a3d37; }
@@ -215,5 +216,6 @@ def scrollable(content: QWidget) -> QScrollArea:
     area.setWidgetResizable(True)
     area.setFrameShape(QFrame.Shape.NoFrame)
     area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    area.verticalScrollBar().setObjectName("page")  # keeps a gap between bar and content
     area.setWidget(content)
     return area
