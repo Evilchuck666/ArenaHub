@@ -484,3 +484,37 @@ def test_name_colours(window):
     assert window.player_name.cursorPosition() == 2
     preview = window.name_preview.text()
     assert "#ff0000" in preview and "Evil" in preview and "^1" not in preview
+
+
+def test_unfinished_name_waits_without_a_warning(window, tmp_path, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+
+    from arenahub.core import configs
+
+    folder = tmp_path / "q3"
+    (folder / "baseq3").mkdir(parents=True)
+    (folder / "baseq3" / "pak0.pk3").write_text("")
+    window.folder.setText(str(folder))
+    window.refresh()
+    configs.save_player(folder, configs.Player("Ranger", 3))
+    monkeypatch.setattr(QMessageBox, "warning", lambda *args: pytest.fail(args[2]))
+
+    # Starting the name with a colour: empty, then only the code.
+    for text in ("", "^1"):
+        window.player_name.setText(text)
+        window.player_name.editingFinished.emit()
+        assert configs.read_player(folder).name == "Ranger"
+        assert "Ranger" not in window.name_preview.text()
+    assert "Now type your name" in window.name_preview.text()
+
+    window.player_name.setText("^1Evil")
+    window.player_name.editingFinished.emit()
+    assert configs.read_player(folder).name == "^1Evil"
+
+
+def test_name_field_refuses_characters_the_config_cannot_hold(window):
+    from PySide6.QtTest import QTest
+
+    window.player_name.clear()
+    QTest.keyClicks(window.player_name, 'Bad"Na\\me;')
+    assert window.player_name.text() == "BadName"

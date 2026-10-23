@@ -39,15 +39,21 @@ class Player:
 
 def validate(player: Player) -> None:
     """Raise ValueError with a message for the user if the settings cannot be saved."""
-    name = player.name.strip()
-    if not names.plain(name).strip():
+    validate_name(player.name)
+    if not math.isfinite(player.sensitivity) or player.sensitivity <= 0:
+        raise ValueError("Mouse sensitivity must be a positive number.")
+
+
+def validate_name(name: str) -> None:
+    name = name.strip()
+    if not name:
         raise ValueError("Enter a player name.")
+    if not names.plain(name).strip():
+        raise ValueError("Now type your name.")  # only colour codes so far
     if len(name) > MAX_NAME_LENGTH:
         raise ValueError(f"The player name can have at most {MAX_NAME_LENGTH} characters.")
     if any(ord(ch) < 32 or ch in '"\\;' for ch in name):
         raise ValueError("The player name cannot contain quotes, backslashes or semicolons.")
-    if not math.isfinite(player.sensitivity) or player.sensitivity <= 0:
-        raise ValueError("Mouse sensitivity must be a positive number.")
 
 
 def bundled_game_dirs() -> list[str]:

@@ -83,7 +83,7 @@ def test_set_value_appends_missing_keys():
     "player, message",
     [
         (configs.Player("", 3), "Enter a player name"),
-        (configs.Player("^1^2", 3), "Enter a player name"),  # colours only
+        (configs.Player("^1^2", 3), "Now type your name"),  # colours only
         (configs.Player('Bad"Name', 3), "quotes"),
         (configs.Player("x;quit", 3), "semicolons"),
         (configs.Player("x" * 33, 3), "at most"),

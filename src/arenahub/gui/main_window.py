@@ -5,8 +5,8 @@ from __future__ import annotations
 import html
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize, Qt, QThread, QTimer, QUrl
-from PySide6.QtGui import QCloseEvent, QDesktopServices, QIcon
+from PySide6.QtCore import QRegularExpression, QSettings, QSize, Qt, QThread, QTimer, QUrl
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QIcon, QRegularExpressionValidator
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -294,14 +294,19 @@ class MainWindow(QMainWindow):
         self.player_name = QLineEdit()
         self.player_name.setMaxLength(configs.MAX_NAME_LENGTH)
         self.player_name.setPlaceholderText("Your name in game")
+        # Characters that would break the line in player.cfg (see configs.validate_name).
+        self.player_name.setValidator(
+            QRegularExpressionValidator(QRegularExpression(r'[^"\\;\x00-\x1f]*'), self)
+        )
         self.sensitivity = DecimalSpinBox()
         self.sensitivity.setRange(0.01, 30.0)
         self.sensitivity.setDecimals(2)
         self.sensitivity.setSingleStep(0.1)
-        # Both are written to every player.cfg as soon as they change (see save_player).
+        # Both are written to every player.cfg after a short pause in typing (see save_player).
         self._player_timer = QTimer(self, singleShot=True, interval=600)
-        self._player_timer.timeout.connect(self.save_player)
-        self.player_name.editingFinished.connect(self.save_player)
+        self._player_timer.timeout.connect(self._autosave_player)
+        self.player_name.textChanged.connect(self._player_changed)
+        self.player_name.editingFinished.connect(self._autosave_player)
         self.sensitivity.valueChanged.connect(self._player_changed)
         self.renderer = QComboBox()
         self.renderer.addItem("OpenGL", Renderer.OPENGL.value)
@@ -369,6 +374,15 @@ class MainWindow(QMainWindow):
         return row
 
     def _show_name_preview(self, name: str) -> None:
+        # An unfinished name is not saved (see _autosave_player); say why here.
+        try:
+            configs.validate_name(name)
+        except ValueError as exc:
+            self.name_preview.setText(
+                f'<span style="color: {COLORS["ERROR"]}; font-size: 12px; font-weight: 400;">'
+                f"{html.escape(str(exc))}</span>"
+            )
+            return
         self.name_preview.setText(
             "".join(
                 f'<span style="color: {names.COLORS[color][1]}; white-space: pre;">'
@@ -637,6 +651,12 @@ class MainWindow(QMainWindow):
         if not self._loading_player:
             self._player_timer.start()
 
+    def _autosave_player(self) -> None:
+        """Save while editing, without interrupting: an unfinished name waits."""
+        self._player_timer.stop()
+        if self._valid_player():
+            self.save_player()
+
     def save_player(self) -> bool:
         """Write name and sensitivity into the player.cfg files of the installation."""
         self._player_timer.stop()
@@ -720,7 +740,7 @@ class MainWindow(QMainWindow):
                 event.ignore()
                 return
             self.server_tab.stop_and_wait()
-        if self._player_timer.isActive() and self._valid_player():
-            self.save_player()  # a change made just before closing
+        if self._player_timer.isActive():
+            self._autosave_player()  # a change made just before closing
         self._save_settings()
         event.accept()
