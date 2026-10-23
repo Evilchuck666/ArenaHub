@@ -452,3 +452,23 @@ def test_only_tabs_that_overflow_scroll(window):
     window.resize(window.minimumSize())
     assert "Server" in scrolling()
     assert "Play" not in scrolling()  # a long tab doesn't make the short ones scroll
+
+
+def test_window_stays_out_of_the_real_home(window, isolated_home):
+    assert window.install_dir().is_relative_to(isolated_home)
+
+
+def test_pending_sensitivity_is_saved_on_close(window, tmp_path):
+    from arenahub.core import configs
+
+    folder = tmp_path / "q3"
+    (folder / "baseq3").mkdir(parents=True)
+    (folder / "baseq3" / "pak0.pk3").write_text("")
+    window.folder.setText(str(folder))
+    window.refresh()
+
+    window.sensitivity.setValue(6.5)
+    assert window._player_timer.isActive()
+    window.close()
+    assert not window._player_timer.isActive()
+    assert configs.read_player(folder).sensitivity == 6.5

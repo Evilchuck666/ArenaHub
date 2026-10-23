@@ -30,6 +30,22 @@ class RecordingContext(Context):
         return self.answers.pop(0) if self.answers else None
 
 
+@pytest.fixture(autouse=True)
+def isolated_home(tmp_path, monkeypatch):
+    """Keep every test away from the real home folder.
+
+    The default installation folder, shortcuts and app data all live under it,
+    so a test that forgets to pick its own folder would change the user's game.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    for name in ("HOME", "USERPROFILE"):
+        monkeypatch.setenv(name, str(home))
+    for name in ("XDG_CONFIG_HOME", "XDG_DATA_HOME", "APPDATA", "LOCALAPPDATA"):
+        monkeypatch.delenv(name, raising=False)
+    return home
+
+
 @pytest.fixture
 def ctx():
     return RecordingContext()

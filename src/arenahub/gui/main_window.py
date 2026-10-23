@@ -682,5 +682,7 @@ class MainWindow(QMainWindow):
                 event.ignore()
                 return
             self.server_tab.stop_and_wait()
+        if self._player_timer.isActive() and self._valid_player():
+            self.save_player()  # a change made just before closing
         self._save_settings()
         event.accept()
