@@ -113,6 +113,13 @@ Every game gets three config files in its folder, as in QuakeBundle:
 When you change your name or sensitivity in the **Play** tab, ArenaHub writes
 them straight into every `player.cfg` and leaves the rest of each file as it is.
 It only adds config files that are missing, so your own edits survive updates.
+
+Names can use Quake III colour codes: `^` followed by a digit colours the text
+after it (`^1` red, `^2` green, `^3` yellow, `^4` blue, `^5` cyan, `^6` magenta,
+`^7` white, `^0` black). The buttons next to the name insert them, and the
+preview shows the name as the game draws it. If the name doesn't end in white,
+ArenaHub adds `^7` to the end of the name it saves in `player.cfg`. That way kill
+messages and other text after the name don't take its colour.
 The originals live in [`assets/cfg/`](assets/cfg/).
 
 In the mods, teammates and enemies get fixed, easy-to-spot models: teammates

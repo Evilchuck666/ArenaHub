@@ -3,7 +3,7 @@ import pytest
 pytest.importorskip("PySide6.QtWidgets")
 
 from PySide6.QtCore import QSettings  # noqa: E402
-from PySide6.QtWidgets import QApplication  # noqa: E402
+from PySide6.QtWidgets import QApplication, QPushButton  # noqa: E402
 
 
 @pytest.fixture
@@ -472,3 +472,15 @@ def test_pending_sensitivity_is_saved_on_close(window, tmp_path):
     window.close()
     assert not window._player_timer.isActive()
     assert configs.read_player(folder).sensitivity == 6.5
+
+
+def test_name_colours(window):
+    window.player_name.setText("Evil")
+    window.player_name.setCursorPosition(0)
+    swatches = window.findChildren(QPushButton, "swatch")
+    assert len(swatches) == 8
+    swatches[1].click()
+    assert window.player_name.text() == "^1Evil"
+    assert window.player_name.cursorPosition() == 2
+    preview = window.name_preview.text()
+    assert "#ff0000" in preview and "Evil" in preview and "^1" not in preview

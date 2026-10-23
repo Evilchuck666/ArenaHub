@@ -53,11 +53,15 @@ QLabel#section { font-size: 14px; font-weight: 650; }
 QFrame#panel { background: @PANEL; border: 1px solid @PANEL_BORDER; border-radius: 14px; }
 QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; border: none; }
 
+QLabel#namePreview { font-size: 14px; font-weight: 650; }
+
 QPushButton { border: 1px solid @INPUT_BORDER; border-radius: 8px; background: @RAISED; padding: 8px 14px; font-weight: 600; }
 QPushButton:hover { background: @RAISED_HOVER; border-color: #6b4a42; }
 QPushButton:pressed { background: #140e0d; }
 QPushButton:focus { border-color: @GOLD; }
 QPushButton:disabled { color: @DISABLED; background: #191211; border-color: #2a1f1d; }
+QPushButton#swatch { min-width: 16px; max-width: 16px; min-height: 16px; max-height: 16px; padding: 0; border-radius: 4px; border: 1px solid @INPUT_BORDER; }
+QPushButton#swatch:hover { border-color: @GOLD; }
 QPushButton#primary { background: @ACCENT; border-color: @ACCENT; color: @ON_ACCENT; padding: 11px 22px; }
 QPushButton#primary:hover { background: @ACCENT_HOVER; border-color: @ACCENT_HOVER; }
 QPushButton#primary:pressed { background: @ACCENT_PRESSED; border-color: @ACCENT_PRESSED; }

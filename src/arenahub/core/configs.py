@@ -5,6 +5,7 @@ Each game folder with configs gets three files, as in QuakeBundle:
 - autoexec.cfg: Quake3e runs it at every start; it only runs the other two.
 - game.cfg:     bindings, HUD, graphics, sound and server settings.
 - player.cfg:   name, sensitivity and model; ArenaHub edits name and sensitivity.
+                The name may hold colour codes (see names).
 
 Every game ArenaHub installs has its own set. A folder without them would
 still use baseq3's, because the engine looks for autoexec.cfg in the mod
@@ -18,7 +19,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import paths
+from . import names, paths
 
 CONFIG_FILES = ("autoexec.cfg", "game.cfg", "player.cfg")
 PLAYER_CFG = "player.cfg"
@@ -26,6 +27,8 @@ OBSOLETE = ("arenahub.cfg",)
 """Files earlier versions of ArenaHub wrote; the configs above replace them."""
 
 MAX_NAME_LENGTH = 32
+"""Colour codes included. The game keeps 35 characters, which leaves room for
+the ^7 that names.for_game adds."""
 
 
 @dataclass(frozen=True)
@@ -37,7 +40,7 @@ class Player:
 def validate(player: Player) -> None:
     """Raise ValueError with a message for the user if the settings cannot be saved."""
     name = player.name.strip()
-    if not name:
+    if not names.plain(name).strip():
         raise ValueError("Enter a player name.")
     if len(name) > MAX_NAME_LENGTH:
         raise ValueError(f"The player name can have at most {MAX_NAME_LENGTH} characters.")
@@ -122,7 +125,7 @@ def read_player(install_dir: Path) -> Player | None:
     """The player settings saved in the installation (baseq3 first), if any."""
     for path in player_files(install_dir):
         text = path.read_text(encoding="utf-8", errors="replace")
-        name = read_value(text, "name")
+        name = names.from_game(read_value(text, "name") or "")
         sensitivity = read_value(text, "sensitivity")
         try:
             return Player(name or Player.name, float(sensitivity or Player.sensitivity))
@@ -138,7 +141,7 @@ def save_player(install_dir: Path, player: Player) -> list[Path]:
     updated = []
     for path in player_files(install_dir):
         text = path.read_text(encoding="utf-8", errors="replace")
-        new = set_value(text, "name", player.name.strip())
+        new = set_value(text, "name", names.for_game(player.name.strip()))
         new = set_value(new, "sensitivity", format_sensitivity(player.sensitivity))
         if new != text:
             staged = path.with_name(path.name + ".tmp")

@@ -83,6 +83,7 @@ def test_set_value_appends_missing_keys():
     "player, message",
     [
         (configs.Player("", 3), "Enter a player name"),
+        (configs.Player("^1^2", 3), "Enter a player name"),  # colours only
         (configs.Player('Bad"Name', 3), "quotes"),
         (configs.Player("x;quit", 3), "semicolons"),
         (configs.Player("x" * 33, 3), "at most"),
@@ -174,3 +175,13 @@ def test_team_and_enemy_models(game_dir, expected):
     text = (ASSETS / game_dir / "game.cfg").read_text()
     for key, value in expected.items():
         assert configs.read_value(text, key) == value, key
+
+
+def test_coloured_name_ends_in_white(tmp_path):
+    folder = make_install(tmp_path, "baseq3")
+    configs.save_player(folder, configs.Player("^1Evil^4Chuck", 3))
+
+    text = (folder / "baseq3" / "player.cfg").read_text()
+    assert configs.read_value(text, "name") == "^1Evil^4Chuck^7"
+    # The window gets the name back as it was typed.
+    assert configs.read_player(folder).name == "^1Evil^4Chuck"

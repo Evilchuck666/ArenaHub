@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, QSize, Qt, QThread, QTimer, QUrl
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
+    QSizePolicy,
     QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
@@ -32,7 +34,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import __version__
-from ..core import configs, engine, launcher, maps, paths, q3key
+from ..core import configs, engine, launcher, maps, names, paths, q3key
 from ..core.catalog import MODS, QUAKE3, TEAM_ARENA, Game
 from ..core.context import Prompt
 from ..core.engine import Renderer
@@ -306,10 +308,11 @@ class MainWindow(QMainWindow):
         self.renderer.addItem("Vulkan", Renderer.VULKAN.value)
         grid.addWidget(label("Name", "muted"), 0, 0, 1, 2)
         grid.addWidget(self.player_name, 1, 0, 1, 2)
-        grid.addWidget(label("Mouse sensitivity", "muted"), 2, 0)
-        grid.addWidget(label("Renderer", "muted"), 2, 1)
-        grid.addWidget(self.sensitivity, 3, 0)
-        grid.addWidget(self.renderer, 3, 1)
+        grid.addLayout(self._name_colors(), 2, 0, 1, 2)
+        grid.addWidget(label("Mouse sensitivity", "muted"), 3, 0)
+        grid.addWidget(label("Renderer", "muted"), 3, 1)
+        grid.addWidget(self.sensitivity, 4, 0)
+        grid.addWidget(self.renderer, 4, 1)
         player_layout.addLayout(grid)
         player_layout.addWidget(
             label("Saved to the game's player.cfg files as you change them.", "muted", wrap=True)
@@ -342,6 +345,41 @@ class MainWindow(QMainWindow):
         right.addStretch()
         layout.addLayout(right, stretch=1)
         return tab
+
+    def _name_colors(self) -> QHBoxLayout:
+        """The name as the game shows it, and buttons that insert Quake III colour codes."""
+        row = QHBoxLayout()
+        row.setSpacing(4)
+        self.name_preview = QLabel(textFormat=Qt.TextFormat.RichText)
+        self.name_preview.setObjectName("namePreview")
+        self.name_preview.setAccessibleName("Name as shown in game")
+        # A long name is cut off rather than widening the panel.
+        self.name_preview.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.player_name.textChanged.connect(self._show_name_preview)
+        row.addWidget(self.name_preview, stretch=1)
+        for index, (color_name, rgb) in enumerate(names.COLORS):
+            button = QPushButton()
+            button.setObjectName("swatch")
+            button.setStyleSheet(f"background: {rgb};")
+            button.setToolTip(f"{color_name} ({names.code(index)})")
+            button.setAccessibleName(f"Insert {color_name.lower()}")
+            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # the cursor stays in the name
+            button.clicked.connect(lambda _checked, color=index: self._insert_color(color))
+            row.addWidget(button)
+        return row
+
+    def _show_name_preview(self, name: str) -> None:
+        self.name_preview.setText(
+            "".join(
+                f'<span style="color: {names.COLORS[color][1]}; white-space: pre;">'
+                f"{html.escape(text)}</span>"
+                for color, text in names.pieces(name)
+            )
+        )
+
+    def _insert_color(self, color: int) -> None:
+        self.player_name.insert(names.code(color))
+        self.player_name.setFocus()
 
     # Settings -------------------------------------------------------------------
 
