@@ -1,5 +1,6 @@
 import plistlib
 import stat
+import sys
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,8 @@ from arenahub.core.catalog import CPMA, GAMES, QUAKE3, TEAM_ARENA
 from arenahub.core.engine import Renderer
 
 TEMPLATES = Path(__file__).resolve().parent.parent / "assets" / "links"
+
+posix_only = pytest.mark.skipif(sys.platform == "win32", reason="POSIX paths and modes")
 
 
 @pytest.fixture
@@ -53,6 +56,7 @@ def test_template_problems_are_reported():
     ]
 
 
+@posix_only
 def test_linux_shortcut(tmp_path, install_dir, monkeypatch):
     monkeypatch.setattr(paths, "system", lambda: "linux")
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
@@ -104,6 +108,7 @@ def macos(tmp_path, monkeypatch):
     return calls
 
 
+@posix_only
 def test_macos_app(tmp_path, install_dir, macos):
     app = shortcuts.create(install_dir, TEAM_ARENA, Renderer.VULKAN)
 
