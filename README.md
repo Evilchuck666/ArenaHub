@@ -3,7 +3,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20GNU%2FLinux%20%7C%20macOS-blue)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/Evilchuck666/ArenaHub?label=download&sort=semver)](https://github.com/Evilchuck666/ArenaHub/releases/latest)
-[![Build and tests](https://github.com/Evilchuck666/ArenaHub/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/Evilchuck666/ArenaHub/actions/workflows/build.yml)
+[![Build and tests](https://github.com/Evilchuck666/ArenaHub/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Evilchuck666/ArenaHub/actions/workflows/release.yml)
 
 **Quake III Arena, Team Arena and the classic mods, set up in one window.**
 

@@ -20,7 +20,7 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
       - '.python-version'
-      - '.github/workflows/build.yml'
+      - '.github/workflows/release.yml'
   pull_request:
   workflow_dispatch:
     inputs:

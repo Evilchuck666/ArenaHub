@@ -290,7 +290,7 @@ a standalone binary, not an `.app`.
 
 ### GitHub Actions
 
-`.github/workflows/build.yml` builds, tests and packages ArenaHub for GNU/Linux
+`.github/workflows/release.yml` builds, tests and packages ArenaHub for GNU/Linux
 x64, Windows x64, macOS Intel and macOS Apple Silicon. It is **disabled by
 default**:
 
