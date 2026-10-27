@@ -1,8 +1,5 @@
 # 🎮 ArenaHub
 
-[![Latest release](https://img.shields.io/github/v/release/Evilchuck666/ArenaHub?label=download&sort=semver)](https://github.com/Evilchuck666/ArenaHub/releases/latest)
-[![Test and release](https://github.com/Evilchuck666/ArenaHub/actions/workflows/release.yml/badge.svg)](https://github.com/Evilchuck666/ArenaHub/actions/workflows/release.yml)
-
 **Quake III Arena, Team Arena and the classic mods, set up in one window.**
 
 ArenaHub is a desktop installer and launcher for Quake III Arena. It downloads
