@@ -1,6 +1,8 @@
 # 🎮 ArenaHub
 
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20GNU%2FLinux%20%7C%20macOS-blue)
+![Python](https://img.shields.io/badge/python-3.13-blue)
+![PySide6](https://img.shields.io/badge/PySide6-%3E%3D6.8-blue)
 ![Requires](https://img.shields.io/badge/requires-Quake%20III%20Arena%20on%20Steam-blue)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/Evilchuck666/ArenaHub?label=download&sort=semver)](https://github.com/Evilchuck666/ArenaHub/releases/latest)
