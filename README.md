@@ -15,6 +15,24 @@ your own Steam copy of the game, installs the [Quake3e](https://github.com/ec-/Q
 engine with four classic mods and a collection of community maps, and lets you
 play or run your own server on Windows, GNU/Linux or macOS.
 
+<!-- SCREENSHOTS:START -->
+## Screenshots
+
+![ArenaHub — qt-window](site/assets/screenshots/installation.png)
+
+ArenaHub installation window. Isolated settings; no Steam login or game download.
+
+<details>
+<summary>More screenshots</summary>
+
+![ArenaHub — qt-window](site/assets/screenshots/server.png)
+
+ArenaHub dedicated-server configuration, before a game installation.
+
+</details>
+
+<!-- SCREENSHOTS:END -->
+
 ## 🧩 Why ArenaHub?
 
 Getting Quake III Arena ready to play takes several separate jobs: downloading
@@ -68,6 +86,9 @@ them from [lvlworld.com](https://lvlworld.com).
    **Play**.
 
 ## 📥 Download
+
+The [project site](https://evilchuck666.github.io/ArenaHub/#start) also provides
+direct downloads for each platform, with links to GitHub releases and source.
 
 | Platform | Latest stable release |
 | --- | --- |
