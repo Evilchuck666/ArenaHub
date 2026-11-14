@@ -15,8 +15,10 @@ your own Steam copy of the game, installs the [Quake3e](https://github.com/ec-/Q
 engine with four classic mods and a collection of community maps, and lets you
 play or run your own server on Windows, GNU/Linux or macOS.
 
+🌐 **Website:** https://evilchuck666.github.io/ArenaHub/
+
 <!-- SCREENSHOTS:START -->
-## Screenshots
+## 📸 Screenshots
 
 ![ArenaHub — qt-window](site/assets/screenshots/installation.png)
 
@@ -44,21 +46,7 @@ ArenaHub does all of that for you. Choose a folder, sign in to Steam once and
 press **Install**. Then set your player name, pick a game and play, or start a
 dedicated server, from the same window.
 
-## ⚔️ What you can play
-
-| Game | What it is |
-| --- | --- |
-| **Quake III Arena** | The original game, from your Steam library. |
-| **Quake III: Team Arena** | The official expansion, when your account owns it. |
-| **Challenge ProMode Arena** 1.53 | The competitive mod, with its full map pack. |
-| **OSP Tourney DM/CA/CTF** 1.03a | The classic tournament mod. |
-| **Rocket Arena 3** 1.80 | Round-based arena play. You can join servers, but not host them. |
-| **Threewave CTF** 1.6 + 1.7 | The classic Capture the Flag mod. |
-
-ArenaHub also adds **47 community map packs** that every mod can load, most of
-them from [lvlworld.com](https://lvlworld.com).
-
-## ✨ What it does
+## ✨ Features
 
 - Downloads the game straight from Steam, with a single login and Steam Guard
   support in the window.
@@ -74,16 +62,19 @@ them from [lvlworld.com](https://lvlworld.com).
 - Keeps your own config edits when you update.
 - Creates shortcuts that start each game without opening ArenaHub.
 
-## 🚀 Getting started
+### ⚔️ What you can play
 
-1. Download the package for your system from the
-   [latest release](https://github.com/Evilchuck666/ArenaHub/releases/latest).
-2. Extract the package and open **ArenaHub** (`ArenaHub.exe` on Windows).
-3. In the **Install** tab, choose a folder, enter your Steam username and press
-   **Install**.
-4. Enter your Steam password and, if asked, your Steam Guard code.
-5. Once installation finishes, open the **Play** tab, pick a game and press
-   **Play**.
+| Game | What it is |
+| --- | --- |
+| **Quake III Arena** | The original game, from your Steam library. |
+| **Quake III: Team Arena** | The official expansion, when your account owns it. |
+| **Challenge ProMode Arena** 1.53 | The competitive mod, with its full map pack. |
+| **OSP Tourney DM/CA/CTF** 1.03a | The classic tournament mod. |
+| **Rocket Arena 3** 1.80 | Round-based arena play. You can join servers, but not host them. |
+| **Threewave CTF** 1.6 + 1.7 | The classic Capture the Flag mod. |
+
+ArenaHub also adds **47 community map packs** that every mod can load, most of
+them from [lvlworld.com](https://lvlworld.com).
 
 ## 📥 Download
 
@@ -102,7 +93,18 @@ direct downloads for each platform, with links to GitHub releases and source.
 The packages are not signed, so macOS Gatekeeper and Windows SmartScreen warn
 the first time you open them.
 
-## 📋 What you need
+## 🚀 Getting started
+
+1. Download the package for your system from the
+   [latest release](https://github.com/Evilchuck666/ArenaHub/releases/latest).
+2. Extract the package and open **ArenaHub** (`ArenaHub.exe` on Windows).
+3. In the **Install** tab, choose a folder, enter your Steam username and press
+   **Install**.
+4. Enter your Steam password and, if asked, your Steam Guard code.
+5. Once installation finishes, open the **Play** tab, pick a game and press
+   **Play**.
+
+## 📋 Requirements
 
 - A **Steam account that owns Quake III Arena**. Team Arena is optional.
 - An **Internet connection** and about **3 GB** of free space.
@@ -138,3 +140,7 @@ Built with **Qt6 / PySide6**, [steam-next](https://github.com/fabieu/steam-next)
 and **Quake3e**. Quake III Arena is a trademark of id Software. The mods and
 maps belong to their respective authors. ArenaHub is not affiliated with id
 Software, Bethesda or Valve.
+
+## ⚖️ License
+
+ArenaHub is free software released under the **GNU General Public License v3.0** (GPL-3.0). See [LICENSE](LICENSE).
