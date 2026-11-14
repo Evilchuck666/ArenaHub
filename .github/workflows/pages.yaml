@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+# The JavaScript actions below run on Node 24.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 concurrency:
   group: project-pages
   cancel-in-progress: false
