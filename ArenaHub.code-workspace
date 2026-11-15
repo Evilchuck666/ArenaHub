@@ -1,9 +1,12 @@
 {
-    "folders": [{ "path": "." }],
-    "settings": {
-        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
-    },
-    "extensions": {
-        "recommendations": ["ms-python.python", "ms-python.vscode-pylance", "charliermarsh.ruff"]
+  "folders": [
+    {
+      "name": "ArenaHub",
+      "path": "."
     }
+  ],
+  // The shared settings, tasks (uv sync, run, tests, lint, PyInstaller build), debug configuration and recommended
+  // extensions live in .vscode/, so they also apply when the folder is opened directly. Only window-wide settings go
+  // here: VS Code ignores them in .vscode/settings.json when the project is opened through this file.
+  "settings": {}
 }
