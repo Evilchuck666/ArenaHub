@@ -1,17 +1,16 @@
 {
+    // The uv-managed environment created by `uv sync` or scripts/setup_*. It installs ArenaHub in
+    // editable mode, so src/ needs no extra analysis path.
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-    "python.terminal.activateEnvironment": true,
-    "python.analysis.extraPaths": ["${workspaceFolder}/src"],
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": ["tests"],
+    // Ruff formats and sorts imports with the rules in pyproject.toml (line length 100).
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": { "source.organizeImports": "explicit" }
-    },
-    "files.exclude": {
-        "**/__pycache__": true,
-        "**/.ruff_cache": true,
-        "**/.pytest_cache": true
+        "editor.codeActionsOnSave": {
+            "source.organizeImports.ruff": "explicit"
+        },
+        "editor.rulers": [100]
     }
 }

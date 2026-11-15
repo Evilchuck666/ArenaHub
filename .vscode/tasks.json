@@ -1,8 +1,28 @@
 {
     "version": "2.0.0",
     "tasks": [
-        { "label": "uv sync", "type": "shell", "command": "uv sync", "problemMatcher": [] },
-        { "label": "Run ArenaHub", "type": "shell", "command": "uv run arenahub", "problemMatcher": [] },
+        {
+            "label": "Setup environment",
+            "detail": "Install uv if missing, the uv-managed Python and every dependency into .venv",
+            "type": "shell",
+            "command": "./scripts/setup_linux.sh",
+            "osx": { "command": "./scripts/setup_macos.sh" },
+            "windows": { "command": "scripts\\setup_windows.bat" },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run ArenaHub",
+            "type": "shell",
+            "command": "uv run arenahub",
+            "problemMatcher": []
+        },
+        {
+            "label": "Smoke test",
+            "detail": "Open the window and quit, as CI does",
+            "type": "shell",
+            "command": "uv run arenahub --smoke-test",
+            "problemMatcher": []
+        },
         {
             "label": "Tests",
             "type": "shell",
@@ -10,12 +30,44 @@
             "group": { "kind": "test", "isDefault": true },
             "problemMatcher": []
         },
-        { "label": "Lint", "type": "shell", "command": "uv run ruff check src tests scripts", "problemMatcher": [] },
         {
-            "label": "Build onefile (PyInstaller)",
+            "label": "Lint",
+            "type": "shell",
+            "command": "uv run ruff check src tests scripts",
+            "problemMatcher": []
+        },
+        {
+            "label": "Format",
+            "type": "shell",
+            "command": "uv run ruff format src tests scripts",
+            "problemMatcher": []
+        },
+        {
+            "label": "Format check",
+            "type": "shell",
+            "command": "uv run ruff format --check src tests scripts",
+            "problemMatcher": []
+        },
+        {
+            "label": "Checks",
+            "detail": "Lint, format check and tests, in that order",
+            "dependsOn": ["Lint", "Format check", "Tests"],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build onefile",
+            "detail": "Single-file executable in dist/ (PyInstaller)",
             "type": "shell",
             "command": "uv run pyinstaller ArenaHub.spec --clean --noconfirm",
             "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Verify onefile",
+            "detail": "Steam helper self-test and GUI smoke test of the binary in dist/, from an empty folder",
+            "type": "shell",
+            "command": "uv run python scripts/package.py --verify-only",
             "problemMatcher": []
         }
     ]

@@ -1,9 +1,18 @@
 {
+    // ms-python.python also brings Pylance and the Python Environments extension.
     "recommendations": [
         "ms-python.python",
-        "ms-python.vscode-pylance",
         "ms-python.debugpy",
         "charliermarsh.ruff",
-        "tamasfe.even-better-toml"
+        "tamasfe.even-better-toml",
+        "github.vscode-github-actions"
+    ],
+    // Ruff already lints, formats and sorts imports.
+    "unwantedRecommendations": [
+        "ms-python.black-formatter",
+        "ms-python.autopep8",
+        "ms-python.isort",
+        "ms-python.flake8",
+        "ms-python.pylint"
     ]
 }

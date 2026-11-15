@@ -6,8 +6,10 @@
             "type": "debugpy",
             "request": "launch",
             "module": "arenahub",
-            "cwd": "${workspaceFolder}",
-            "justMyCode": true
+            "justMyCode": true,
+            // The debugger also attaches to the Steam helper process the app starts, which runs on
+            // gevent (steam-next).
+            "gevent": true
         }
     ]
 }

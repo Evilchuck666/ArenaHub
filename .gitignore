@@ -1,36 +1,21 @@
-# uv virtual environment (uv sync, scripts/setup_*)
+# uv: the project environment (uv sync, scripts/setup_*)
 .venv/
 
-# Python bytecode and tool caches (pytest, ruff)
+# Python bytecode and tool caches (pytest, Ruff)
 __pycache__/
-*.py[cod]
 .pytest_cache/
 .ruff_cache/
-.coverage
-htmlcov/
 
-# PyInstaller (ArenaHub.spec): build/ is its work folder, dist/ holds the onefile binary and the
+# PyInstaller (ArenaHub.spec): build/ is its work folder; dist/ holds the onefile binary and the
 # release archives written by scripts/package.py
-build/
-dist/
+/build/
+/dist/
 
-# Mod downloads left by an interrupted install into a folder inside the checkout
-.arenahub-staging/
-
-# Editors: only the shared VS Code files in .vscode/ are tracked
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.idea/
-*.swp
-*~
-
-# OS
+# Files the supported development systems drop into folders (macOS Finder, Windows Explorer)
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Personal Claude Code files
+# Personal Claude Code files (CLAUDE.md is shared)
 CLAUDE.local.md
 .claude/settings.local.json

@@ -1,12 +1,29 @@
 {
-  "folders": [
-    {
-      "name": "ArenaHub",
-      "path": "."
+    // ArenaHub is always opened through this file. It defines the workspace and the rules that apply to
+    // every file in the repository. The Python toolchain (interpreter, Ruff, pytest), tasks, debugging and
+    // extension recommendations live in .vscode/, and no setting is defined in both places.
+    "folders": [
+        {
+            "name": "ArenaHub",
+            "path": "."
+        }
+    ],
+    "settings": {
+        // Every text file in the repository has no trailing whitespace and ends with exactly one newline.
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true,
+        // Bytecode and tool caches (pytest, Ruff) stay out of the explorer.
+        "files.exclude": {
+            "**/__pycache__": true,
+            "**/.pytest_cache": true,
+            "**/.ruff_cache": true
+        },
+        // .venv (PySide6 alone has thousands of files) and PyInstaller's build/ and dist/ need no watching.
+        "files.watcherExclude": {
+            "**/.venv/**": true,
+            "**/build/**": true,
+            "**/dist/**": true
+        }
     }
-  ],
-  // The shared settings, tasks (uv sync, run, tests, lint, PyInstaller build), debug configuration and recommended
-  // extensions live in .vscode/, so they also apply when the folder is opened directly. Only window-wide settings go
-  // here: VS Code ignores them in .vscode/settings.json when the project is opened through this file.
-  "settings": {}
 }
