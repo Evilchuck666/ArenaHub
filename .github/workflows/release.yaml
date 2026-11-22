@@ -60,7 +60,7 @@ jobs:
                   "pyproject.toml",
                   "uv.lock",
                   ".python-version",
-                  "ArenaHub.spec",
+                  "scripts/ArenaHub.spec",
                   "scripts/package.py",
                   "tests/**",
                   ".github/workflows/release.yaml",
@@ -78,7 +78,7 @@ jobs:
                   "pyproject.toml",
                   "uv.lock",
                   ".python-version",
-                  "ArenaHub.spec",
+                  "scripts/ArenaHub.spec",
                   "scripts/package.py",
                   ".github/workflows/release.yaml"
                 ],
@@ -194,7 +194,7 @@ jobs:
 
       - name: Build single-file executable
         if: needs.changes.outputs.build == 'true'
-        run: uv run pyinstaller ArenaHub.spec --clean --noconfirm
+        run: uv run pyinstaller scripts/ArenaHub.spec --clean --noconfirm
 
       - name: Verify and package
         if: needs.changes.outputs.build == 'true'

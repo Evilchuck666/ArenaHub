@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
-# Build a single-file executable for the current system:
-#   uv run pyinstaller ArenaHub.spec --clean --noconfirm
+# Build a single-file executable for the current system, from the repository root
+# (PyInstaller puts build/ and dist/ in the current directory):
+#   uv run pyinstaller scripts/ArenaHub.spec --clean --noconfirm
 # PyInstaller does not cross-compile: build on each target OS/architecture.
 import importlib
 import sys
@@ -8,7 +9,8 @@ from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_submodules, copy_metadata
 
-ROOT = Path(SPECPATH)
+# SPECPATH is the folder holding this spec (scripts/); the project root is one level up.
+ROOT = Path(SPECPATH).resolve().parent
 ICONS = ROOT / "assets" / "icons"
 
 # Everything the app imports at runtime, including what only the Steam helper

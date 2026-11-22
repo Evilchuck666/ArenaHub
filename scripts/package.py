@@ -39,7 +39,7 @@ def arch() -> str:
 def executable() -> Path:
     exe = DIST / ("ArenaHub.exe" if system() == "windows" else "ArenaHub")
     if not exe.is_file():
-        sys.exit(f"{exe} not found; build it first with: uv run pyinstaller ArenaHub.spec")
+        sys.exit(f"{exe} not found; build it first with: uv run pyinstaller scripts/ArenaHub.spec")
     return exe
 
 

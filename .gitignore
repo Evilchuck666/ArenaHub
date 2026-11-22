@@ -6,7 +6,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# PyInstaller (ArenaHub.spec): build/ is its work folder; dist/ holds the onefile binary and the
+# PyInstaller (scripts/ArenaHub.spec): build/ is its work folder; dist/ holds the onefile binary and the
 # release archives written by scripts/package.py
 /build/
 /dist/

@@ -242,7 +242,7 @@ uv run arenahub                                        # run from source
 python3 run.py                                         # same; any Python hands over to .venv
 uv run pytest                                          # tests
 uv run ruff check src tests scripts                    # lint
-uv run pyinstaller ArenaHub.spec --clean --noconfirm   # single-file build in dist/
+uv run pyinstaller scripts/ArenaHub.spec --clean --noconfirm   # single-file build in dist/
 ```
 
 Open `ArenaHub.code-workspace` in VS Code. The workspace already points at
@@ -251,7 +251,7 @@ and building.
 
 Add dependencies with `uv add <package>` so that `pyproject.toml` and `uv.lock`
 stay in sync. If a new package is loaded dynamically, declare it in
-`ArenaHub.spec`: list it in `REQUIRED` and add it to `hiddenimports` or `datas`.
+`scripts/ArenaHub.spec`: list it in `REQUIRED` and add it to `hiddenimports` or `datas`.
 The build stops if something in `REQUIRED` cannot be imported.
 
 ### Project layout
@@ -264,6 +264,7 @@ src/arenahub/
   core/            installation logic, no Qt: catalog, downloads, Steam, keys, launcher
   gui/             Qt window, theme and background worker
 tests/             pytest suite; no network or Steam account needed
+scripts/           setup scripts, ArenaHub.spec (PyInstaller), package.py, icon and thumbnail tools
 assets/icons/      application icon (regenerate with scripts/make_icons.py), header emblem, ui/ theme icons
 assets/links/      .desktop templates for the GNU/Linux shortcuts
 assets/cfg/        game configs copied into each game folder
@@ -274,7 +275,7 @@ assets/levelshots/ map thumbnails for the Maps tab (regenerate with scripts/make
 ### Building
 
 ```bash
-uv run pyinstaller ArenaHub.spec --clean --noconfirm
+uv run pyinstaller scripts/ArenaHub.spec --clean --noconfirm
 uv run python scripts/package.py   # verify the binary from an empty folder, then archive it
 ```
 

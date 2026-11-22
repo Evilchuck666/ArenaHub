@@ -59,7 +59,7 @@
             "label": "Build onefile",
             "detail": "Single-file executable in dist/ (PyInstaller)",
             "type": "shell",
-            "command": "uv run pyinstaller ArenaHub.spec --clean --noconfirm",
+            "command": "uv run pyinstaller scripts/ArenaHub.spec --clean --noconfirm",
             "group": { "kind": "build", "isDefault": true },
             "problemMatcher": []
         },

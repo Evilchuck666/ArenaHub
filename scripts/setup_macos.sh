@@ -20,5 +20,5 @@ cat <<MSG
 Done. Useful commands:
   uv run arenahub                                        # run the app
   uv run pytest                                          # run the tests
-  uv run pyinstaller ArenaHub.spec --clean --noconfirm   # single-file build in dist/
+  uv run pyinstaller scripts/ArenaHub.spec --clean --noconfirm   # single-file build in dist/
 MSG
