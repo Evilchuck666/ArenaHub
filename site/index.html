@@ -30,27 +30,26 @@
 <article><span class="feature-number">02</span><h3>The classics</h3><p>Play CPMA, OSP, Rocket Arena 3 and Threewave CTF, with 47 community map packs.</p></article>
 <article><span class="feature-number">03</span><h3>Play or host</h3><p>Set your player name, choose OpenGL or Vulkan, and configure a dedicated server for supported modes.</p></article></section>
 <section id="start" class="start" aria-labelledby="start-title"><div><p class="eyebrow">Get started</p><h2 id="start-title">Choose a folder. Install. Play.</h2><p>Install ArenaHub with one command, or download and extract the package for your system. Then open ArenaHub and sign in to a Steam account that owns Quake III Arena. Team Arena is available when your account owns the expansion. No Python installation needed.</p>
+<div class="install"><h3>Quick install</h3>
+<p class="install-label">GNU/Linux &amp; macOS</p>
+<pre><code>curl -fsSL https://evilchuck666.github.io/ArenaHub/install.sh | sh
+# or
+wget -qO- https://evilchuck666.github.io/ArenaHub/install.sh | sh</code></pre>
+<p class="install-label">Windows (PowerShell)</p>
+<pre><code>irm https://evilchuck666.github.io/ArenaHub/install.ps1 | iex</code></pre>
+<p class="install-note">Arch Linux and derivatives get the <code>arenahub-bin</code> AUR package, other GNU/Linux systems the PyPI package through uv, and macOS and Windows the release executable. Either way you end up with a shortcut to ArenaHub, and the download is checked against its SHA-256 checksum. Read <a href="https://github.com/Evilchuck666/ArenaHub/blob/main/site/install.sh">install.sh</a> or <a href="https://github.com/Evilchuck666/ArenaHub/blob/main/site/install.ps1">install.ps1</a> first if you like.</p></div>
+<h3 class="manual-title">Or download it yourself</h3>
 <ul class="downloads" aria-label="Download ArenaHub for your system">
 <li><a class="button secondary" href="https://github.com/Evilchuck666/ArenaHub/releases/latest/download/ArenaHub-linux-x64.tar.gz"><span class="download-label"><svg class="os-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 9C6 11 5 14 5 17c0 3 3 4 7 4s7-1 7-4c0-3-1-6-3-8V6a4 4 0 0 0-8 0z" fill="currentColor"/><ellipse cx="12" cy="15" rx="4" ry="5" fill="var(--bg)"/><ellipse cx="10.5" cy="6.5" rx="1" ry="1.5" fill="var(--bg)"/><ellipse cx="13.5" cy="6.5" rx="1" ry="1.5" fill="var(--bg)"/><path d="m9 9 3-2 3 2-3 2zM3 20l4-2 3 4H3zm18 0-4-2-3 4h7z" fill="currentColor"/></svg><span>Linux x64<small>.tar.gz</small></span></span><span aria-hidden="true">↓</span></a></li>
 <li><a class="button secondary" href="https://github.com/Evilchuck666/ArenaHub/releases/latest/download/ArenaHub-windows-x64.zip"><span class="download-label"><svg class="os-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="m2 5 9-1.3v7.5H2zm10-1.5L22 2v9.2H12zM2 12.5h9V20l-9-1.3zm10 0h10V22l-10-1.5z"/></svg><span>Windows x64<small>.zip</small></span></span><span aria-hidden="true">↓</span></a></li>
 <li><a class="button secondary" href="https://github.com/Evilchuck666/ArenaHub/releases/latest/download/ArenaHub-macos-x64.zip"><span class="download-label"><svg class="os-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M16.6 1c.2 1.5-.4 3-1.3 4-1 1.1-2.4 1.7-3.8 1.5-.2-1.4.5-2.9 1.4-3.9C13.9 1.6 15.4 1 16.6 1ZM20.7 17.4c-.5 1.2-.8 1.8-1.5 2.9-1 1.5-2.4 3.3-4.1 3.3-1.5 0-1.9-1-3.9-1-1.9 0-2.4 1-3.9 1-1.7 0-3-1.7-4-3.2C.5 16.2.1 10.9 1.9 8.1 3.2 6.2 5.2 5 7.2 5c1.6 0 2.7 1 4 1 1.2 0 2.1-1 4-1 1.6 0 3.4.9 4.7 2.4-4.1 2.2-3.4 8.1.8 10Z" transform="translate(2 1) scale(.86)"/></svg><span>macOS Intel<small>.zip · x64</small></span></span><span aria-hidden="true">↓</span></a></li>
 <li><a class="button secondary" href="https://github.com/Evilchuck666/ArenaHub/releases/latest/download/ArenaHub-macos-arm64.zip"><span class="download-label"><svg class="os-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M16.6 1c.2 1.5-.4 3-1.3 4-1 1.1-2.4 1.7-3.8 1.5-.2-1.4.5-2.9 1.4-3.9C13.9 1.6 15.4 1 16.6 1ZM20.7 17.4c-.5 1.2-.8 1.8-1.5 2.9-1 1.5-2.4 3.3-4.1 3.3-1.5 0-1.9-1-3.9-1-1.9 0-2.4 1-3.9 1-1.7 0-3-1.7-4-3.2C.5 16.2.1 10.9 1.9 8.1 3.2 6.2 5.2 5 7.2 5c1.6 0 2.7 1 4 1 1.2 0 2.1-1 4-1 1.6 0 3.4.9 4.7 2.4-4.1 2.2-3.4 8.1.8 10Z" transform="translate(2 1) scale(.86)"/></svg><span>macOS Apple Silicon<small>.zip · arm64</small></span></span><span aria-hidden="true">↓</span></a></li>
 </ul>
-<p><a href="https://github.com/Evilchuck666/ArenaHub/releases/latest/download/SHA256SUMS.txt">SHA-256 checksums ↓</a> · <a href="https://github.com/Evilchuck666/ArenaHub/releases/latest">Release notes &amp; all downloads on GitHub ↗</a></p></div><div class="install">
-<div><h3>One command</h3><p>Installs the latest ArenaHub and adds it to your application menu: the AUR package on Arch-based systems, the PyPI package elsewhere on GNU/Linux, an app in <code>Applications</code> on macOS, and Start menu and desktop shortcuts on Windows. Run it again to update.</p><pre><code># GNU/Linux and macOS
-curl -fsSL https://evilchuck666.github.io/ArenaHub/install.sh | sh
-# or: wget -qO- https://evilchuck666.github.io/ArenaHub/install.sh | sh
-
-# Windows (PowerShell)
-irm https://evilchuck666.github.io/ArenaHub/install.ps1 | iex</code></pre><p><a href="https://github.com/Evilchuck666/ArenaHub/blob/main/site/install.sh">Read install.sh ↗</a> · <a href="https://github.com/Evilchuck666/ArenaHub/blob/main/site/install.ps1">Read install.ps1 ↗</a></p></div>
-<div><h3>Arch Linux &amp; derivatives</h3><p>ArenaHub is in the <a href="https://aur.archlinux.org/packages/arenahub-bin">AUR ↗</a> as <code>arenahub-bin</code>, with its desktop entry and icon.</p><pre><code>yay -S arenahub-bin
-# or: paru -S arenahub-bin</code></pre></div>
-<div><h3>With Python</h3><p>ArenaHub is also on <a href="https://pypi.org/project/ArenaHub/">PyPI ↗</a>. It runs on Python 3.13, which uv downloads when your system has another version.</p><pre><code>uv tool install arenahub
-arenahub</code></pre></div>
-<aside class="resources" aria-label="Project resources"><h3>From the workshop</h3><ul>
+<p><a href="https://github.com/Evilchuck666/ArenaHub/releases/latest/download/SHA256SUMS.txt">SHA-256 checksums ↓</a> · <a href="https://github.com/Evilchuck666/ArenaHub/releases/latest">Release notes &amp; all downloads on GitHub ↗</a></p>
+<p class="install-note">Also in the <a href="https://aur.archlinux.org/packages/arenahub-bin">AUR ↗</a> (<code>arenahub-bin</code>) and on <a href="https://pypi.org/project/ArenaHub/">PyPI ↗</a> (<code>uv tool install arenahub</code>).</p></div><aside class="resources" aria-label="Project resources"><h3>From the workshop</h3><ul>
 <li><a href="https://github.com/Evilchuck666/ArenaHub#readme">Read the documentation ↗</a></li>
 <li><a href="https://github.com/Evilchuck666/ArenaHub/issues">Report an issue ↗</a></li>
-<li><a href="https://github.com/Evilchuck666/ArenaHub">Explore the source ↗</a></li></ul></aside></div></section>
+<li><a href="https://github.com/Evilchuck666/ArenaHub">Explore the source ↗</a></li></ul></aside></section>
 
 </main>
 <footer><p>A project by <a href="https://evilchuck666.github.io/">Carlos Martínez</a>.</p><p><a href="https://github.com/Evilchuck666/ArenaHub/blob/main/LICENSE">GPLv3</a> · <a href="https://github.com/Evilchuck666/ArenaHub">Source & documentation</a></p></footer>
