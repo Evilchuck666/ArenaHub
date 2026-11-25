@@ -70,7 +70,19 @@ fetch_text() {
 }
 
 # latest_version: the version of the latest GitHub release, without the v.
+# releases/latest redirects to releases/tag/vX.Y.Z. Unlike the GitHub API, that has no
+# per-IP limit for anonymous requests, which shared IPs (offices, CI) run into.
 latest_version() {
+    if has curl; then
+        tag_url=$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$RELEASES/latest" 2>/dev/null) ||
+            tag_url=""
+        case "$tag_url" in
+            */releases/tag/*)
+                printf '%s' "${tag_url##*/releases/tag/}" | sed 's/^v//'
+                return 0
+                ;;
+        esac
+    fi
     fetch_text "https://api.github.com/repos/$REPO/releases/latest" |
         sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"v\{0,1\}\([^"]*\)".*/\1/p' |
         head -n 1

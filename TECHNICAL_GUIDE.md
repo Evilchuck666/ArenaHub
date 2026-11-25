@@ -384,14 +384,21 @@ After the GitHub release, two jobs publish the other channels:
 The packages are not signed, so macOS Gatekeeper and Windows SmartScreen will
 warn on first launch.
 
-`.github/workflows/pages.yaml` deploys `site/` when it changes. Before deploying
-it checks the list of public files (update its count when adding or removing
-one), runs `shellcheck` on `install.sh` and parses `install.ps1`. After
-deploying it runs the documented one-line installers against the live page on
-Ubuntu, macOS Intel, macOS Apple Silicon, Windows (PowerShell 5.1) and an Arch
-Linux container without an AUR helper. Then it starts the installed ArenaHub
-with `--smoke-test`. These tests install the latest published release, not the
-commit being deployed.
+`.github/workflows/pages.yaml` deploys `site/` when it changes. It checks the
+list of public files (update its count when adding or removing one), uploads the
+site in one job and deploys it in the next. With both in one job, the deploy could
+look for the upload before GitHub listed it.
+
+`.github/workflows/installers.yaml` tests the install scripts. It runs on pushes
+and pull requests that change them, every Monday and on demand. It checks that
+both are ASCII only, runs `shellcheck` on `install.sh` and parses `install.ps1`.
+Then it runs this commit's scripts the way the one-liners do (read from stdin)
+on Ubuntu, macOS Intel, macOS Apple Silicon, Windows (PowerShell 5.1) and an
+Arch Linux container without an AUR helper, and starts the installed ArenaHub
+with `--smoke-test`. The scripts install the latest published release, so the
+weekly run also catches changes outside the repository (the AUR, PyPI, uv).
+Releases don't start it on their own; after one, run
+`gh workflow run installers.yaml -R Evilchuck666/ArenaHub`.
 
 ## Verification
 
