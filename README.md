@@ -78,6 +78,41 @@ them from [lvlworld.com](https://lvlworld.com).
 
 ## 📥 Download
 
+### ⚡ Quick install
+
+One command installs the latest ArenaHub and adds it to your application menu.
+
+**GNU/Linux and macOS**, in a terminal:
+
+```bash
+curl -fsSL https://evilchuck666.github.io/ArenaHub/install.sh | sh
+# or: wget -qO- https://evilchuck666.github.io/ArenaHub/install.sh | sh
+```
+
+**Windows**, in PowerShell:
+
+```powershell
+irm https://evilchuck666.github.io/ArenaHub/install.ps1 | iex
+```
+
+What the scripts install:
+
+- **Arch Linux and derivatives:** the `arenahub-bin` AUR package, with your AUR
+  helper (paru, yay, pikaur or trizen) or with `makepkg`.
+- **Other GNU/Linux distributions:** the PyPI package with
+  [uv](https://docs.astral.sh/uv/), which also provides Python 3.13, plus a
+  menu entry.
+- **macOS:** `ArenaHub.app` in your `Applications` folder, for Intel or Apple
+  Silicon.
+- **Windows:** `ArenaHub.exe` in `%LOCALAPPDATA%\Programs\ArenaHub`, with
+  shortcuts in the Start menu and on the desktop.
+
+Run the command again to update. You can read
+[install.sh](site/install.sh) and [install.ps1](site/install.ps1) before
+running them.
+
+### 📦 Manual download
+
 The [project site](https://evilchuck666.github.io/ArenaHub/#start) also provides
 direct downloads for each platform, with links to GitHub releases and source.
 
@@ -116,10 +151,12 @@ arenahub
 
 ## 🚀 Getting started
 
-1. Download the package for your system from the
+1. Install ArenaHub with the [quick install](#-quick-install) command, or
+   download the package for your system from the
    [latest release](https://github.com/Evilchuck666/ArenaHub/releases/latest),
    or install it from the AUR or PyPI (see above).
-2. Extract the package and open **ArenaHub** (`ArenaHub.exe` on Windows).
+2. Open **ArenaHub** from your application menu, or extract the package you
+   downloaded and open `ArenaHub` (`ArenaHub.exe` on Windows).
 3. In the **Install** tab, choose a folder, enter your Steam username and press
    **Install**.
 4. Enter your Steam password and, if asked, your Steam Guard code.

@@ -39,9 +39,29 @@ jobs:
           test -s site/styles.css
           test -f site/.nojekyll
           test -s site/favicon.svg
-          test "$(find site -type f | wc -l)" -eq 6
+          test -s site/install.sh
+          test -s site/install.ps1
+          test "$(find site -type f | wc -l)" -eq 8
           test -s site/assets/screenshots/installation.png
           test -s site/assets/screenshots/server.png
+      - name: Check install.sh
+        shell: bash
+        run: |
+          # ASCII only, like install.ps1 (see below).
+          if LC_ALL=C grep -nP '[^\x00-\x7F]' site/install.sh site/install.ps1; then
+            echo "::error::The install scripts must be ASCII only."
+            exit 1
+          fi
+          sh -n site/install.sh
+          shellcheck -s sh site/install.sh
+      # Windows PowerShell decodes what 'irm' downloads without knowing its charset,
+      # hence the ASCII check above.
+      - name: Parse install.ps1
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/site/install.ps1", [ref]$null, [ref]$errors) | Out-Null
+          if ($errors) { $errors | Format-List; exit 1 }
 
   deploy:
     needs: validate
@@ -66,3 +86,103 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  # Run the documented one-line installers against the page just deployed, on each
+  # system they support, and check that ArenaHub starts from what they installed.
+  installers:
+    name: Install script (${{ matrix.os }})
+    needs: deploy
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, macos-15-intel, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      SITE: https://evilchuck666.github.io/ArenaHub
+      # A new query string skips the CDN's copy of the previous version.
+      FRESH: ?v=${{ github.sha }}
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Install Qt runtime libraries (GNU/Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libegl1 libxkbcommon-x11-0 libxcb-cursor0 \
+            libxcb-icccm4 libxcb-shape0 libxcb-keysyms1
+
+      - name: Run install.sh
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -o pipefail
+          curl -fsSL "$SITE/install.sh$FRESH" | sh
+
+      - name: Check the menu entry and start ArenaHub (GNU/Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          entry="$HOME/.local/share/applications/arenahub.desktop"
+          test -f "$entry"
+          test -s "$HOME/.local/share/icons/hicolor/scalable/apps/arenahub.svg"
+          "$(sed -n 's/^TryExec=//p' "$entry")" --smoke-test
+
+      - name: Check the app bundle and start ArenaHub (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app="$HOME/Applications/ArenaHub.app"
+          plutil -lint "$app/Contents/Info.plist"
+          test -s "$app/Contents/Resources/arenahub.icns"
+          "$app/Contents/MacOS/ArenaHub" --smoke-test
+
+      # Windows PowerShell 5.1, the oldest version the script supports.
+      - name: Run install.ps1 and start ArenaHub (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          irm "$env:SITE/install.ps1$env:FRESH" | iex
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\ArenaHub\ArenaHub.exe'
+          $expected = @(
+            $exe,
+            (Join-Path ([Environment]::GetFolderPath('Programs')) 'ArenaHub.lnk'),
+            (Join-Path ([Environment]::GetFolderPath('Desktop')) 'ArenaHub.lnk')
+          )
+          foreach ($path in $expected) {
+            if (-not (Test-Path $path)) { throw "Missing $path" }
+          }
+          $process = Start-Process -FilePath $exe -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "The smoke test exited with $($process.ExitCode)" }
+
+  # Arch Linux without an AUR helper: install.sh builds the AUR package with makepkg.
+  installer-arch:
+    name: Install script (Arch Linux, makepkg)
+    needs: deploy
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    timeout-minutes: 20
+    env:
+      SITE: https://evilchuck666.github.io/ArenaHub
+      FRESH: ?v=${{ github.sha }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # makepkg refuses root, and the script asks sudo for pacman.
+      - name: Add a user with sudo
+        run: |
+          pacman -Syu --noconfirm --needed sudo
+          useradd -m player
+          echo 'player ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/player
+
+      - name: Run install.sh
+        run: su player -c "set -o pipefail; curl -fsSL '$SITE/install.sh$FRESH' | sh"
+
+      - name: Check the package and start ArenaHub
+        run: |
+          pacman -Q arenahub-bin
+          test -f /usr/share/applications/arenahub.desktop
+          test -f /usr/share/icons/hicolor/scalable/apps/arenahub.svg
+          su player -c 'QT_QPA_PLATFORM=offscreen arenahub --smoke-test'

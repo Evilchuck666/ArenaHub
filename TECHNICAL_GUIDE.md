@@ -35,6 +35,28 @@ Two other channels carry the same application:
   package, as `arenahub/assets/`. It needs Python 3.13:
   `uv tool install arenahub` downloads it when the system has another version.
 
+### Install scripts
+
+The project page serves two scripts that pick one of those channels and leave
+a shortcut to ArenaHub:
+
+```bash
+curl -fsSL https://evilchuck666.github.io/ArenaHub/install.sh | sh   # GNU/Linux, macOS
+irm https://evilchuck666.github.io/ArenaHub/install.ps1 | iex        # Windows PowerShell
+```
+
+| System | What the script does | Uninstall |
+| --- | --- | --- |
+| Arch Linux and derivatives (`ID`/`ID_LIKE` contains `arch`, or `pacman` exists) | Installs `arenahub-bin` with paru, yay, pikaur or trizen. Without a helper, installs `base-devel` and `git` if they are missing, clones the AUR package and runs `makepkg -si`. The package brings the menu entry and icon. Must run as a normal user; it uses `sudo`. | `sudo pacman -R arenahub-bin` |
+| Other GNU/Linux distributions | Installs [uv](https://docs.astral.sh/uv/) in `~/.local/bin` if it is missing, then `uv tool install --upgrade --python 3.13 ArenaHub`. Writes `~/.local/share/applications/arenahub.desktop` and copies the icon from the installed package. Warns when SDL2 or `libxcb-cursor` is missing, with the package to install. | `uv tool uninstall ArenaHub`, then delete the `.desktop` file and `~/.local/share/icons/hicolor/scalable/apps/arenahub.svg` |
+| macOS | Downloads the Intel or Apple Silicon package (it detects Apple Silicon under Rosetta too), checks it against `SHA256SUMS.txt` and wraps the executable in `~/Applications/ArenaHub.app` with the release's icon. | Delete `~/Applications/ArenaHub.app` |
+| Windows | Downloads the package, checks it against `SHA256SUMS.txt`, installs `ArenaHub.exe` in `%LOCALAPPDATA%\Programs\ArenaHub` and adds shortcuts to the Start menu and the desktop. Works in Windows PowerShell 5.1 and PowerShell 7. | Delete that folder and both `ArenaHub.lnk` shortcuts |
+
+Run the same command again to update. Piped into `sh`, `install.sh` reads its
+answers (sudo, pacman, the AUR helper) from the terminal; without one, as in
+CI, it passes `--noconfirm`. Both scripts are ASCII only, because Windows
+PowerShell decodes what `irm` downloads without knowing its encoding.
+
 ### System requirements
 
 - A Steam account that owns Quake III Arena. Team Arena is optional.
@@ -285,6 +307,7 @@ assets/cfg/        game configs copied into each game folder
 assets/maps/       backup copy of the map packs (downloaded, not bundled)
 assets/levelshots/ map thumbnails for the Maps tab (regenerate with scripts/make_thumbnails.py)
 arch/              PKGBUILD and desktop entry of the arenahub-bin AUR package
+site/              project page (GitHub Pages) and the install.sh / install.ps1 scripts
 ```
 
 ### Building
@@ -360,6 +383,15 @@ After the GitHub release, two jobs publish the other channels:
 
 The packages are not signed, so macOS Gatekeeper and Windows SmartScreen will
 warn on first launch.
+
+`.github/workflows/pages.yaml` deploys `site/` when it changes. Before deploying
+it checks the list of public files (update its count when adding or removing
+one), runs `shellcheck` on `install.sh` and parses `install.ps1`. After
+deploying it runs the documented one-line installers against the live page on
+Ubuntu, macOS Intel, macOS Apple Silicon, Windows (PowerShell 5.1) and an Arch
+Linux container without an AUR helper. Then it starts the installed ArenaHub
+with `--smoke-test`. These tests install the latest published release, not the
+commit being deployed.
 
 ## Verification
 
