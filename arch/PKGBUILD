@@ -6,7 +6,7 @@
 # fills in the checksums with updpkgsums.
 pkgname=arenahub-bin
 _pkgname=ArenaHub
-pkgver=0.4.1
+pkgver=0.4.2
 pkgrel=1
 pkgdesc="Installer and launcher for Quake III Arena, Team Arena and classic mods"
 arch=('x86_64')
