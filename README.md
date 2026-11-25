@@ -93,10 +93,32 @@ direct downloads for each platform, with links to GitHub releases and source.
 The packages are not signed, so macOS Gatekeeper and Windows SmartScreen warn
 the first time you open them.
 
+### 🏹 Arch Linux (AUR)
+
+ArenaHub is in the AUR as
+[arenahub-bin](https://aur.archlinux.org/packages/arenahub-bin): the same
+single executable, with a desktop entry, an icon and the libraries it needs.
+
+```bash
+yay -S arenahub-bin     # or: paru -S arenahub-bin
+```
+
+### 🐍 PyPI
+
+ArenaHub is also on [PyPI](https://pypi.org/project/ArenaHub/). It runs on
+Python 3.13; [uv](https://docs.astral.sh/uv/) downloads it if your system has
+another version:
+
+```bash
+uv tool install arenahub
+arenahub
+```
+
 ## 🚀 Getting started
 
 1. Download the package for your system from the
-   [latest release](https://github.com/Evilchuck666/ArenaHub/releases/latest).
+   [latest release](https://github.com/Evilchuck666/ArenaHub/releases/latest),
+   or install it from the AUR or PyPI (see above).
 2. Extract the package and open **ArenaHub** (`ArenaHub.exe` on Windows).
 3. In the **Install** tab, choose a folder, enter your Steam username and press
    **Install**.
@@ -108,8 +130,9 @@ the first time you open them.
 
 - A **Steam account that owns Quake III Arena**. Team Arena is optional.
 - An **Internet connection** and about **3 GB** of free space.
-- A **Windows, GNU/Linux or macOS** system. On GNU/Linux, Quake3e needs SDL2;
-  see the [technical guide](TECHNICAL_GUIDE.md#system-requirements).
+- A **Windows, GNU/Linux or macOS** system. On GNU/Linux, Quake3e needs SDL2
+  (the AUR package installs it); see the
+  [technical guide](TECHNICAL_GUIDE.md#system-requirements).
 
 The application bundles its own Python and Qt, so you don't need to install
 them. The game, the engine, the mods and the maps are downloaded during

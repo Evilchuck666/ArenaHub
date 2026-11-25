@@ -4,6 +4,19 @@ dynamic = ["version"]
 description = "Installer and launcher for Quake III Arena, Team Arena and classic mods"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Games/Entertainment :: First Person Shooters",
+]
+keywords = ["quake", "quake3", "quake3e", "steam", "cpma", "osp", "launcher", "installer"]
 dependencies = [
     "certifi>=2026.10.19",
     "PySide6>=6.8",
@@ -11,6 +24,12 @@ dependencies = [
     "steam-next[client]>=3.0,<4",
     "zstandard>=0.23",
 ]
+
+[project.urls]
+Homepage = "https://evilchuck666.github.io/ArenaHub/"
+Source = "https://github.com/Evilchuck666/ArenaHub"
+Issues = "https://github.com/Evilchuck666/ArenaHub/issues"
+Releases = "https://github.com/Evilchuck666/ArenaHub/releases"
 
 [project.scripts]
 arenahub = "arenahub.__main__:main"
@@ -23,15 +42,40 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+# 1.27 understands the SPDX license expression above (PEP 639).
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
 # Single source of truth for the version: bump it there before a release.
 path = "src/arenahub/__init__.py"
 
+# The wheel carries the files the app reads at run time inside the package, as
+# arenahub/assets/, where core/paths.resource() finds them. The map packs in assets/maps are
+# downloaded instead. (force-include would also copy them into editable installs.)
 [tool.hatch.build.targets.wheel]
-packages = ["src/arenahub"]
+only-include = [
+    "src/arenahub",
+    "assets/cfg",
+    "assets/icons",
+    "assets/levelshots",
+    "assets/links",
+]
+sources = { "src" = "", "assets" = "arenahub/assets" }
+
+# Keep the 350 MB of map packs out of the source distribution (PyPI caps uploads at 100 MB).
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/arenahub",
+    "/assets/cfg",
+    "/assets/icons",
+    "/assets/levelshots",
+    "/assets/links",
+    "/tests",
+    "/README.md",
+    "/TECHNICAL_GUIDE.md",
+    "/LICENSE",
+]
 
 [tool.uv]
 # Always use a uv-managed Python, never the system one

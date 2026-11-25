@@ -4,8 +4,10 @@ name: Build desktop app
 # variable ARENAHUB_CI is set to "true" (Settings → Secrets and variables →
 # Actions → Variables). Only change detection and the final status run
 # when no application work is needed. "Run workflow" always works: leave the version empty to just build,
-# or give one (e.g. 1.0.0, matching src/arenahub/__init__.py) to also publish
-# a GitHub release with the four packages.
+# or give one (e.g. 1.0.0, matching src/arenahub/__init__.py and arch/PKGBUILD) to
+# also publish a GitHub release with the four packages, upload the wheel and the
+# source distribution to PyPI (Trusted Publishing, environment "pypi") and push
+# arch/PKGBUILD to the arenahub-bin AUR package (needs the AUR_SSH_PRIVATE_KEY secret).
 
 on:
   push:
@@ -87,7 +89,10 @@ jobs:
               "metadata": {
                 "include": [
                   "README.md",
-                  "LICENSE"
+                  "TECHNICAL_GUIDE.md",
+                  "LICENSE",
+                  "pyproject.toml",
+                  "arch/**"
                 ],
                 "exclude": []
               }
@@ -215,7 +220,7 @@ jobs:
 
   release:
     name: Publish release
-    needs: desktop
+    needs: [desktop, python]
     if: github.event_name == 'workflow_dispatch' && inputs.version != '' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
@@ -250,6 +255,12 @@ jobs:
           code_version=$(sed -nE 's/^__version__ = "([^"]+)"/\1/p' src/arenahub/__init__.py)
           if [[ "$code_version" != "$VERSION" ]]; then
             echo "::error::src/arenahub/__init__.py says $code_version. Bump it to $VERSION first."
+            exit 1
+          fi
+
+          pkgbuild_version=$(sed -nE 's/^pkgver=(.*)/\1/p' arch/PKGBUILD)
+          if [[ "$pkgbuild_version" != "$VERSION" ]]; then
+            echo "::error::arch/PKGBUILD says $pkgbuild_version. Bump it to $VERSION first."
             exit 1
           fi
 
@@ -289,24 +300,163 @@ jobs:
             --generate-notes \
             --latest
 
-  metadata:
-    name: Check package metadata
+  python:
+    name: Python package
     needs: [changes]
-    if: needs.changes.outputs.metadata == 'true' && needs.changes.outputs.build != 'true' && (github.event_name == 'workflow_dispatch' || vars.ARENAHUB_CI == 'true')
+    if: (needs.changes.outputs.build == 'true' || needs.changes.outputs.metadata == 'true') && (github.event_name == 'workflow_dispatch' || vars.ARENAHUB_CI == 'true')
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+
       - uses: astral-sh/setup-uv@v10.3.0
-      - name: Build wheel and source distribution without the standalone application
-        run: uv build --clear
+
+      - name: Install Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libegl1 libxkbcommon-x11-0 libxcb-cursor0 \
+            libxcb-icccm4 libxcb-shape0 libxcb-keysyms1
+
+      - name: Build wheel and source distribution
+        run: |
+          uv build --clear
+          uvx twine check --strict dist/*
+
+      # The wheel must carry the files the app reads at run time, but not the map packs.
+      - name: Check the wheel contents
+        shell: python
+        run: |
+          import glob
+          import zipfile
+
+          (wheel,) = glob.glob('dist/*.whl')
+          names = zipfile.ZipFile(wheel).namelist()
+          for folder in ('cfg', 'icons', 'levelshots', 'links'):
+              if not any(name.startswith(f'arenahub/assets/{folder}/') for name in names):
+                  raise SystemExit(f'{wheel} has no arenahub/assets/{folder}')
+          if any('/maps/' in name for name in names):
+              raise SystemExit(f'{wheel} contains map packs')
+          print(f'{wheel}: {len(names)} files')
+
+      - name: Smoke test the installed wheel
+        run: |
+          uv venv --python 3.13 "$RUNNER_TEMP/wheel"
+          uv pip install --python "$RUNNER_TEMP/wheel" dist/*.whl
+          cd "$RUNNER_TEMP"
+          wheel/bin/arenahub --smoke-test
+          wheel/bin/python -I -c "
+          from arenahub.core import configs, maps, paths
+          assert configs.bundled_game_dirs(), 'no game configs in ' + str(paths.resource('cfg'))
+          assert all(maps.thumbnail(pack).is_file() for pack in maps.MAPS), 'missing levelshots'
+          print('Installed wheel reads its files from', paths.resource())
+          "
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: python-dist
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+
+  pypi:
+    name: Publish to PyPI
+    needs: release
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/project/ArenaHub/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-dist
+          path: dist
+
+      # No API token: PyPI trusts this workflow file and environment directly.
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+  aur:
+    name: Update AUR package
+    needs: release
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ inputs.version }}
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    steps:
+      - name: Check AUR key
+        run: |
+          if [ -z "$AUR_SSH_PRIVATE_KEY" ]; then
+            echo "::error::Add the AUR_SSH_PRIVATE_KEY secret to update the AUR package."
+            exit 1
+          fi
+
+      - name: Set up SSH and git
+        run: |
+          set -euo pipefail
+          pacman -Syu --noconfirm --needed git openssh pacman-contrib
+          ssh_dir="$RUNNER_TEMP/aur-ssh"
+          install -dm700 "$ssh_dir"
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$ssh_dir/aur"
+          chmod 600 "$ssh_dir/aur"
+          # Pinned AUR host keys, see https://aur.archlinux.org
+          cat > "$ssh_dir/known_hosts" << 'EOF'
+          aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN
+          aur.archlinux.org ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLMiLrP8pVi5BFX2i3vepSUnpedeiewE5XptnUnau+ZoeUOPkpoCgZZuYfpaIQfhhJJI5qgnjJmr4hyJbe/zxow=
+          EOF
+          # Inside a container HOME is /github/home but ssh reads ~/.ssh from
+          # /etc/passwd (/root), so pass the key and host keys explicitly.
+          echo "GIT_SSH_COMMAND=ssh -i $ssh_dir/aur -o IdentitiesOnly=yes -o UserKnownHostsFile=$ssh_dir/known_hosts -o StrictHostKeyChecking=yes" >> "$GITHUB_ENV"
+          git config --global user.name "Evilchuck666"
+          git config --global user.email "carlos.martinez.medina1992@gmail.com"
+          # The first clone of a new AUR package is empty; the AUR only accepts master.
+          git config --global init.defaultBranch master
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          path: repo
+
+      # arch/PKGBUILD is the source of truth: copy it over the AUR one with pkgrel
+      # reset to 1, fill in the checksums of the release just published, check that
+      # it builds and regenerate .SRCINFO. makepkg refuses root.
+      - name: Push PKGBUILD to the AUR
+        run: |
+          set -euo pipefail
+          git clone ssh://aur@aur.archlinux.org/arenahub-bin.git aur
+          useradd -m builder
+          cp repo/arch/PKGBUILD repo/arch/arenahub.desktop aur/
+          cd aur
+          sed -i -E "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          chown -R builder .
+          su builder -c 'updpkgsums'
+          su builder -c 'makepkg --nodeps --force --noconfirm'
+          su builder -c 'makepkg --printsrcinfo' > .SRCINFO
+          git config --global --add safe.directory "$PWD"
+          git add PKGBUILD .SRCINFO arenahub.desktop
+          if git diff --cached --quiet; then
+            echo "AUR package is already at $VERSION."
+            exit 0
+          fi
+          git commit -m "Update to $VERSION"
+          git push origin master
 
   result:
     name: CI result
     if: always()
-    needs: [changes, desktop, release, metadata]
+    needs: [changes, desktop, python, release, pypi, aur]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

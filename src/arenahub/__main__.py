@@ -38,6 +38,8 @@ def run_gui(argv: list[str]) -> int:
     app = QApplication([sys.argv[0], *argv])
     app.setApplicationName("ArenaHub")
     app.setOrganizationName("ArenaHub")
+    # Matches arenahub.desktop (AUR package), so Wayland shows the window with its icon.
+    app.setDesktopFileName("arenahub")
     # The same base style everywhere, so the theme's style sheet looks alike on every system.
     app.setStyle("Fusion")
     window = MainWindow()

@@ -22,12 +22,26 @@ to run. Each operating system and architecture needs its own build. See the
 
 **Code → Download ZIP** downloads the source code, not the application.
 
+Two other channels carry the same application:
+
+- **AUR:** [`arenahub-bin`](https://aur.archlinux.org/packages/arenahub-bin)
+  installs the GNU/Linux x64 executable of each release as `/usr/bin/arenahub`,
+  with a desktop entry, the icon and the system libraries Qt and Quake3e load.
+  It repackages the release because a build from source isn't practical:
+  ArenaHub runs on Python 3.13 and needs steam-next, which Arch doesn't package.
+- **PyPI:** [`ArenaHub`](https://pypi.org/project/ArenaHub/) is a regular
+  Python package that runs on the installed PySide6. Its wheel carries the
+  icons, game configs, shortcut templates and map thumbnails inside the
+  package, as `arenahub/assets/`. It needs Python 3.13:
+  `uv tool install arenahub` downloads it when the system has another version.
+
 ### System requirements
 
 - A Steam account that owns Quake III Arena. Team Arena is optional.
 - An Internet connection and about 3 GB of free space.
 - **GNU/Linux:** SDL2 for Quake3e (Arch/Artix: `sdl2`; Debian/Ubuntu:
-  `libsdl2-2.0-0`). Qt needs `libxkbcommon` and `libxkbcommon-x11`.
+  `libsdl2-2.0-0`). Qt needs `libxkbcommon` and `libxkbcommon-x11`. The AUR
+  package installs all of them.
 
 ## What it installs
 
@@ -270,6 +284,7 @@ assets/links/      .desktop templates for the GNU/Linux shortcuts
 assets/cfg/        game configs copied into each game folder
 assets/maps/       backup copy of the map packs (downloaded, not bundled)
 assets/levelshots/ map thumbnails for the Maps tab (regenerate with scripts/make_thumbnails.py)
+arch/              PKGBUILD and desktop entry of the arenahub-bin AUR package
 ```
 
 ### Building
@@ -289,6 +304,21 @@ architecture. The result is a single executable (`dist/ArenaHub` or
 `dist/ArenaHub.exe`) that needs no Python on the target machine. On macOS it is
 a standalone binary, not an `.app`.
 
+The Python package and the AUR package build like this:
+
+```bash
+uv build                            # wheel and source distribution in dist/
+cd arch && updpkgsums && makepkg -si   # AUR package, once the release v<pkgver> exists
+```
+
+`uv build` puts `assets/cfg`, `icons`, `levelshots` and `links` in the wheel
+under `arenahub/assets/`, and leaves out `assets/maps` (the map packs are
+downloaded, and they would exceed PyPI's upload limit). `core/paths.resource()`
+looks for these files in the PyInstaller bundle, then in the installed package,
+then in the source checkout. `arch/PKGBUILD` downloads the GNU/Linux package of
+the release with that version, so it only builds once the release exists. Its
+checksums are `SKIP` in the repository; `updpkgsums` fills them in.
+
 ### GitHub Actions
 
 `.github/workflows/release.yaml` builds, tests and packages ArenaHub for GNU/Linux
@@ -301,12 +331,35 @@ default**:
 - **Actions → Build desktop app → Run workflow** always works. Leave the version
   empty to just build; the packages are attached to the run as artifacts.
   Enter a version such as `1.0.0` to also publish a GitHub release with the
-  four packages and a `SHA256SUMS.txt`.
+  four packages and a `SHA256SUMS.txt`, upload the wheel and the source
+  distribution to PyPI and update the AUR package.
 
-To release, bump `__version__` in `src/arenahub/__init__.py` first: the
-workflow refuses a version that doesn't match it, or one whose tag already
-exists. The packages are not signed, so macOS Gatekeeper and Windows
-SmartScreen will warn on first launch.
+Every run that touches the application or its packaging also builds the Python
+package: it checks it with `twine`, checks that the wheel carries the assets
+but no map packs, and smoke-tests the app installed from the wheel in a clean
+environment.
+
+To release, bump the version in **both** `src/arenahub/__init__.py`
+(`__version__`) and `arch/PKGBUILD` (`pkgver`) first: the workflow refuses a
+version that doesn't match them, or one whose tag already exists. Then run it
+from the command line or the Actions tab:
+
+```bash
+gh workflow run release.yaml -R Evilchuck666/ArenaHub -f version=X.Y.Z --ref main
+```
+
+After the GitHub release, two jobs publish the other channels:
+
+- **PyPI** uses Trusted Publishing: PyPI trusts this workflow file and the
+  `pypi` environment, so there is no API token.
+- **AUR** copies `arch/PKGBUILD` and `arch/arenahub.desktop` to the
+  `arenahub-bin` package with `pkgrel=1`, fills in the checksums of the release
+  just published with `updpkgsums`, builds the package to check it and
+  regenerates `.SRCINFO` before pushing. It needs the `AUR_SSH_PRIVATE_KEY`
+  secret, whose public key is in the maintainer's AUR account.
+
+The packages are not signed, so macOS Gatekeeper and Windows SmartScreen will
+warn on first launch.
 
 ## Verification
 

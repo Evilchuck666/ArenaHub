@@ -46,9 +46,19 @@ def default_install_dir() -> Path:
 
 
 def resource(*parts: str) -> Path:
-    """A file bundled with the application (works from source and from PyInstaller)."""
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
-    return base.joinpath("assets", *parts)
+    """A file bundled with the application: from PyInstaller, a wheel or the source tree."""
+    return assets_dir().joinpath(*parts)
+
+
+def assets_dir() -> Path:
+    if hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / "assets"
+    # An installed wheel (PyPI) carries them inside the package (see pyproject.toml).
+    package = Path(__file__).resolve().parents[1] / "assets"
+    if package.is_dir():
+        return package
+    # A source checkout, also behind an editable install.
+    return Path(__file__).resolve().parents[3] / "assets"
 
 
 def self_command(*args: str) -> list[str]:
