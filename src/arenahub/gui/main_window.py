@@ -129,7 +129,8 @@ class MainWindow(QMainWindow):
         self.tabs.tabBar().setDrawBase(False)  # the pane's own top border is the base line
         # Each page scrolls on its own, so a long tab doesn't add a scroll bar to the others.
         self.tabs.addTab(theme.scrollable(self._install_tab()), "Install")
-        self.tabs.addTab(theme.scrollable(self._play_tab()), "Play")
+        self.play_page = theme.scrollable(self._play_tab())
+        self.tabs.addTab(self.play_page, "Play")
         self.server_tab = ServerTab(self.install_dir)
         self.tabs.addTab(theme.scrollable(self.server_tab), "Server")
         self.tabs.addTab(theme.scrollable(self._maps_tab()), "Maps")
@@ -450,11 +451,17 @@ class MainWindow(QMainWindow):
             self.games.setCurrentRow(0)
 
         has_engine = engine.executable(folder) is not None
-        self.play_button.setEnabled(bool(installed) and has_engine and not self.busy)
+        playable = bool(installed) and has_engine
+        self.play_button.setEnabled(playable and not self.busy)
         if folder != self._shown_folder:
             # A new folder: suggest Steam only when the game is not there yet, and
             # show the player settings saved in its configs.
+            starting = self._shown_folder is None
             self._shown_folder = folder
+            # Open on the Play tab when the saved folder is ready to play. Later folder
+            # changes keep the current tab.
+            if starting and playable:
+                self.tabs.setCurrentWidget(self.play_page)
             self.use_steam.setChecked(not has_quake3)
             if player := configs.read_player(folder):
                 self._show_player(player)
@@ -604,7 +611,7 @@ class MainWindow(QMainWindow):
             lines.append("CD keys written for: " + ", ".join(sorted(report.keys)))
         lines += report.warnings
         QMessageBox.information(self, "ArenaHub", "\n\n".join(lines))
-        self.tabs.setCurrentIndex(1)
+        self.tabs.setCurrentWidget(self.play_page)
 
     def _on_failed(self, message: str) -> None:
         self._set_status("Installation failed")

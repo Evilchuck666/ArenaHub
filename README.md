@@ -161,7 +161,7 @@ arenahub
    **Install**.
 4. Enter your Steam password and, if asked, your Steam Guard code.
 5. Once installation finishes, open the **Play** tab, pick a game and press
-   **Play**.
+   **Play**. From then on, ArenaHub opens directly on the **Play** tab.
 
 ## 📋 Requirements
 

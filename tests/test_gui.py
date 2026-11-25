@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 pytest.importorskip("PySide6.QtWidgets")
@@ -518,3 +520,66 @@ def test_name_field_refuses_characters_the_config_cannot_hold(window):
     window.player_name.clear()
     QTest.keyClicks(window.player_name, 'Bad"Na\\me;')
     assert window.player_name.text() == "BadName"
+
+
+@pytest.fixture
+def open_window(tmp_path):
+    """Open the window the way ArenaHub starts, with `folder` as the saved install folder."""
+    QSettings.setDefaultFormat(QSettings.Format.IniFormat)
+    QSettings.setPath(QSettings.Format.IniFormat, QSettings.Scope.UserScope, str(tmp_path / "cfg"))
+    app = QApplication.instance() or QApplication([])
+    app.setOrganizationName("ArenaHubTests")
+    opened = []
+
+    def open_on(folder):
+        from arenahub.gui.main_window import MainWindow
+
+        QSettings().setValue("install_dir", str(folder))
+        win = MainWindow()
+        opened.append(win)
+        return win
+
+    yield open_on
+    for win in opened:
+        win.close()
+        win.deleteLater()
+    app.processEvents()
+
+
+def playable_folder(folder):
+    """Quake III Arena plus the Quake3e client, which is what the Play button needs."""
+    (folder / "baseq3").mkdir(parents=True)
+    (folder / "baseq3" / "pak0.pk3").write_text("")
+    engine = "quake3e.x64.exe" if sys.platform == "win32" else "quake3e.x64"
+    (folder / engine).write_text("")
+    return folder
+
+
+def current_tab(window):
+    return window.tabs.tabText(window.tabs.currentIndex())
+
+
+def test_opens_on_play_when_the_installation_is_ready(open_window, tmp_path):
+    window = open_window(playable_folder(tmp_path / "q3"))
+    assert window.play_button.isEnabled()
+    assert current_tab(window) == "Play"
+
+
+def test_opens_on_install_without_the_engine(open_window, tmp_path):
+    folder = tmp_path / "q3"
+    (folder / "baseq3").mkdir(parents=True)
+    (folder / "baseq3" / "pak0.pk3").write_text("")
+    window = open_window(folder)
+    assert not window.play_button.isEnabled()
+    assert current_tab(window) == "Install"
+
+
+def test_choosing_another_folder_keeps_the_tab(open_window, tmp_path):
+    window = open_window(tmp_path / "empty")
+    assert current_tab(window) == "Install"
+
+    window.folder.setText(str(playable_folder(tmp_path / "q3")))
+    window.refresh()
+
+    assert window.play_button.isEnabled()
+    assert current_tab(window) == "Install"
