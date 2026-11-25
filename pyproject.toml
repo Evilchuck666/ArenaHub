@@ -1,5 +1,5 @@
 [project]
-name = "arenahub"
+name = "ArenaHub"
 dynamic = ["version"]
 description = "Installer and launcher for Quake III Arena, Team Arena and classic mods"
 readme = "README.md"
