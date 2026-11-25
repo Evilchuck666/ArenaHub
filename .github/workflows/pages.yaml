@@ -63,18 +63,18 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile("$PWD/site/install.ps1", [ref]$null, [ref]$errors) | Out-Null
           if ($errors) { $errors | Format-List; exit 1 }
 
-  deploy:
+  # Upload and deploy in separate jobs, as in GitHub's own Pages workflow. In one job,
+  # deploy-pages can look for the artifact before the artifact list shows it ("No
+  # artifacts named github-pages"), and re-running that job then finds two. Re-running
+  # only the deploy job reuses this upload.
+  build:
     needs: validate
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      pages: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -83,6 +83,18 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
